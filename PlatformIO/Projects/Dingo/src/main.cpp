@@ -1,71 +1,90 @@
 #include <WiFi.h>
-#include <WebServer.h>
+#include <HTTPClient.h>
 #include <BleMouse.h>
+#include "CommandHandler.h"
 
-// ======== WiFi 配置 ========
-const char* ssid = "wangyuan1";
-const char* password = "wangyuan123$";
+const char *ssid = "wangyuan1";
+const char *password = "wangyuan123$";
+const char *serverUrl = "http://192.168.1.245:3000/command";
 
-// ======== BLE 鼠标对象 ========
 BleMouse bleMouse("ESP32_Mouse");
 
-// ======== HTTP 服务器 ========
-WebServer server(80);
+// ======== 辅助状态变量 ========
+String lastCommand = ""; // 记录上一次执行的命令
+int httpFailCount = 0;   // 连续 HTTP 失败计数
 
-// ======== 初始化函数 ========
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
+void connectWiFi()
+{
+  if (WiFi.status() == WL_CONNECTED)
+    return;
 
-  // 1️⃣ 连接 WiFi
+  Serial.println("🚀 WiFi 重新连接中...");
+  WiFi.disconnect(true);
   WiFi.begin(ssid, password);
-  Serial.print("正在连接 WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
+
+  unsigned long startAttemptTime = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000)
+  {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("\n✅ WiFi 已连接");
-  Serial.print("IP 地址: ");
-  Serial.println(WiFi.localIP());
 
-  // 2️⃣ 启动 BLE 鼠标
-  bleMouse.begin();
-  Serial.println("✅ BLE 鼠标启动完成，等待手机连接...");
-
-  // 3️⃣ 设置 HTTP 路由
-  server.on("/", []() {
-    server.send(200, "text/plain", "ESP32 BLE Mouse is running.\nUse /click or /swipe");
-  });
-
-  // 点击动作
-  server.on("/click", []() {
-    if (bleMouse.isConnected()) {
-      bleMouse.click(MOUSE_LEFT);
-      server.send(200, "text/plain", "Mouse click executed");
-    } else {
-      server.send(200, "text/plain", "BLE Mouse not connected to phone");
-    }
-  });
-
-  // 滑动动作（模拟拖动）
-  server.on("/swipe", []() {
-    if (bleMouse.isConnected()) {
-      // 模拟从上往下滑动（Y方向为负是向上，正为向下）
-      for (int i = 0; i < 30; i++) {
-        bleMouse.move(0, 10); // 每次移动一点
-        delay(15);
-      }
-      server.send(200, "text/plain", "Swipe executed");
-    } else {
-      server.send(200, "text/plain", "BLE Mouse not connected to phone");
-    }
-  });
-
-  // 启动服务器
-  server.begin();
-  Serial.println("✅ HTTP 服务器已启动");
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    Serial.println("\n✅ WiFi 已重新连接");
+    Serial.print("IP 地址: ");
+    Serial.println(WiFi.localIP());
+    httpFailCount = 0; // 重置错误计数
+  }
+  else
+  {
+    Serial.println("\n❌ WiFi 连接失败，稍后重试...");
+  }
 }
 
-void loop() {
-  server.handleClient();
+void setup()
+{
+  Serial.begin(115200);
+  delay(1000);
+
+  // 连接 WiFi
+  connectWiFi();
+  // 2️⃣ 启动 BLE 鼠标
+  bleMouse.begin();
+  // ✅ 将全局指针赋值给模块
+  // bleMousePtr = &bleMouse;
+  // ✅ 初始化命令映射模块
+  setupCommands(bleMouse); 
+  Serial.println("✅ BLE 鼠标启动完成，等待手机连接...");
+}
+
+void loop()
+{
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    connectWiFi();
+    delay(1000);
+    return;
+  }
+  // 如果 BLE 未连接手机，则跳过本轮执行，减少耗电
+  if (!bleMouse.isConnected())
+  {
+    Serial.println("⚠️ BLE 未连接手机，跳过命令轮询");
+    delay(2000);
+    return;
+  }
+
+  // HTTP 请求部分
+  HTTPClient http;
+  http.begin(serverUrl);
+
+  int httpCode = http.GET();
+
+  if (httpCode == 200){
+    String command = http.getString();
+    handleCommand(command); // ✅ 调用模块处理命令
+  }
+
+  http.end();
+  delay(1000);
 }

@@ -1,2 +1,3 @@
-# EmbeddedSystem
-EmbeddedProject
+# 项目
+
+使用ESP32实现远程操控
