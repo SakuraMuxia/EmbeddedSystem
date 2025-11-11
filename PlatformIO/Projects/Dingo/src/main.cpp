@@ -1,11 +1,15 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <BleMouse.h>
+#include "HttpReporter.h"
 #include "CommandHandler.h"
 
 const char *ssid = "wangyuan1";
 const char *password = "wangyuan123$";
+// 接收指令的地址
 const char *serverUrl = "http://192.168.1.245:3000/command";
+// 发送日志的地址
+const char *logServerUrl = "http://192.168.1.245:3000/log";
 
 BleMouse bleMouse("ESP32_Mouse");
 
@@ -55,6 +59,8 @@ void setup()
   // bleMousePtr = &bleMouse;
   // ✅ 初始化命令映射模块
   setupCommands(bleMouse); 
+  // ✅ 初始化日志上报模块
+  initHttpReporter(logServerUrl);
   Serial.println("✅ BLE 鼠标启动完成，等待手机连接...");
 }
 

@@ -12,6 +12,12 @@
 			{
 				"navigationBarTitleText" : "功能"
 			}
+		},
+		{
+			"path": "pages/log/log",
+			"style": {
+				"navigationBarTitleText": "log"
+			}
 		}
 	],
 	"globalStyle": {
@@ -32,7 +38,7 @@
 			"text": "首页"
 		},
 		{
-			"pagePath": "pages/function/function",
+			"pagePath": "pages/log/log",
 			"iconPath": "static/icon/index_active.png",
 			"selectedIconPath": "static/icon/index.png",
 			"text": "功能"

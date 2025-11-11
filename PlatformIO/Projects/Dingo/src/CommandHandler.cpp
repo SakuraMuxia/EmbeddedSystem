@@ -1,4 +1,5 @@
 #include "CommandHandler.h"
+#include "HttpReporter.h"
 
 // 模块内部变量
 static std::map<String, std::function<void()>> commandMap;
@@ -18,6 +19,7 @@ void setupCommands(BleMouse &mouse)
         }
         bleMousePtr->click(MOUSE_LEFT);
         Serial.println("🖱 执行点击");
+        sendLogToServer("🖱 执行点击") ;
     };
 
     commandMap["right_click"] = []()
