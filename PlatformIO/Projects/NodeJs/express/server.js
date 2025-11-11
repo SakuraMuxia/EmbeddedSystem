@@ -14,7 +14,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // ====== 上位端（网页或手机App）发送命令 ======
-app.post('/send_command', (req, res) => {
+app.post('/api/operphone', (req, res) => {
   const { command } = req.body;
   
   if (command === "click" || command === "swipe" || command === "ding") {
