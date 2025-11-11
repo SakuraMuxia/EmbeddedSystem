@@ -1,10 +1,9 @@
 <template>
 	<view class="content">
-		<button @click="handleOpenScreen" class="btn">亮屏</button>
-		
-		<button class="btn">解锁</button>
-		<button class="btn">复位</button>
-		<button class="btn">清缓存</button>
+		<button @click="handleOpenScreen('click')" class="btn">亮屏</button>
+		<button @click="handleOpenScreen('unlock')" class="btn">解锁</button>
+		<button @click="handleOpenScreen('reset')" class="btn">复位</button>
+		<button @click="handleOpenScreen('rmtask')" class="btn">清缓存</button>
 		<button class="btn">发送回送日志</button>
 		<button class="btn">叮一下</button>
 	</view>
@@ -16,10 +15,10 @@ import indexReq from '@/api/index';
 
 const title = ref('Hello');
 
-const handleOpenScreen = async () => {
-	console.log('亮屏操作');
+const handleOpenScreen = async (oper:String) => {
+	console.log('操作');
 	const data = {
-		command:"click"
+		command:oper
 	};
 	await indexReq
 		.reqBrightScreen(data)
