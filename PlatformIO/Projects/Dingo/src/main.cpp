@@ -167,23 +167,24 @@ void setupWebSocketCallbacks()
                  parseAndExecuteCommand(msg); });
 
   ws.onEvent([](WebsocketsEvent event, String data)
-             {    
-  // 如果 连接异常断开 没触发 ConnectionClosed（某些网络掉线情况），isConnected 仍然是 true
-  // 然后下一轮循环再次调用 connectWebSocket()，导致新的连接建立
-  // 所以你可能在无意间建立了多条连接
-                   if (event == WebsocketsEvent::ConnectionClosed)
-                   {
-                       Serial.println("WebSocket 连接关闭");
-                   }
-                   else if (event == WebsocketsEvent::GotPing)
-                   {
-                       Serial.println("收到服务器 Ping");
-                       ws.pong();
-                   }
-                   else if (event == WebsocketsEvent::GotPong)
-                   {
-                       Serial.println("收到服务器 Pong");
-                   } });
+      {switch (event) {
+      case WebsocketsEvent::ConnectionOpened:
+        Serial.println("✅ WebSocket 已连接");
+        break;
+
+      case WebsocketsEvent::ConnectionClosed:
+        Serial.println("❌ WebSocket 连接关闭");
+        break;
+
+      case WebsocketsEvent::GotPing:
+        Serial.println("📡 收到服务器 Ping，自动回复 Pong");
+        ws.pong();
+        break;
+
+      case WebsocketsEvent::GotPong:
+        Serial.println("🔁 收到服务器 Pong");
+        break;
+    } });
 }
 void setup()
 {
@@ -227,7 +228,6 @@ void loop()
     if (!Keyboard.isConnected())
     { // 使用 Keyboard 或 Mouse 都行
       Serial.println("BLE 未连接手机");
-      return; // 本轮直接跳过，不阻塞
     }
   }
   // WebSocket

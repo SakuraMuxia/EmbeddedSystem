@@ -8,8 +8,8 @@
 		<button @click="handleOpenScreen('down')" class="btn">下</button>
 		<button @click="handleOpenScreen('tab')" class="btn">tab</button>
 		<button @click="handleOpenScreen('menu')" class="btn">菜单</button>
-		<button class="btn">发送回送日志</button>
-		<button class="btn">叮一下</button>
+		<button @click="handleOpenScreen('ding')" class="btn">相机</button>
+		<button @click="handleOpenScreen('back')" class="btn">返回</button>
 	</view>
 </template>
 

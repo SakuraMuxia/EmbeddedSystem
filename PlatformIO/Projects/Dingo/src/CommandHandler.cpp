@@ -28,7 +28,7 @@ void mouseMoveSmooth(int dx, int dy, int steps = 10, int stepDelay = 20)
     }
 }
 
-// 辅助函数：模拟滑动手势
+// 辅助函数：模拟滑动手势 向上为 负，向下为正，向左为负，向右为正
 void swipe(int dx, int dy, int steps = 15, int stepDelay = 20)
 {
     if (!Keyboard.isConnected())
@@ -46,8 +46,16 @@ void handleCommand(const String &command)
     }
     // 鼠标操作
     if (command == "click")
-    {
+    {   
         Mouse.click(MOUSE_LEFT);
+        delay(1000);
+        // 复位
+        mouseMoveSmooth(-600,-1000);
+        delay(300);
+        // 移动到中心
+        mouseMoveSmooth(300,500);
+        // 滑动
+        swipe(0, -400); // 向上滑动
     }
     else if (command == "MOVE_DOWN")
     {
@@ -80,13 +88,35 @@ void handleCommand(const String &command)
         delay(100);
         Keyboard.release(KEY_RIGHT_ARROW);
     }
-
+    
     else if (command == "menu")
     {
         Keyboard.press(KEY_LEFT_GUI);
         delay(100);
         Keyboard.release(KEY_LEFT_GUI);
     }
+
+    else if (command == "ding")
+    {
+        
+        // 复位
+        mouseMoveSmooth(-600,-1000);
+        delay(300);
+        // 移动到中心
+        mouseMoveSmooth(180,650);
+        delay(1000);
+        Mouse.click(MOUSE_LEFT);
+        
+    }
+    else if (command == "back")
+    {
+
+        Keyboard.press(KEY_BACKSPACE);   // 按下 Backspace 键
+        delay(150);                      // 保持一小段时间
+        Keyboard.release(KEY_BACKSPACE); // 松开 Backspace 键
+        
+    }
+
     else if (command == "rmtask")
     {
         Keyboard.press(KEY_LEFT_ALT);   // 按下 GUI/Meta 键
