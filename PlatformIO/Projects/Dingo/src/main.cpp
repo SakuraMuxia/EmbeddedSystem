@@ -11,7 +11,7 @@ using namespace websockets;
 // ======== 配置信息 ========
 const char *ssid = "wangyuan1";
 const char *password = "wangyuan123$";
-const char *websocket_server = "ws://192.168.1.245:3000/esp"; // 替换为你的服务器地址
+const char *websocket_server = "ws://39.106.41.164:3000/esp"; // 替换为你的服务器地址
 const char *deviceId = "esp01";                               // 每个设备不同
 // const char *serverUrl = "http://192.168.1.245:3000/command";
 // const char *logServerUrl = "http://192.168.1.245:3000/log";
