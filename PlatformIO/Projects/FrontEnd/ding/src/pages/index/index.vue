@@ -20,12 +20,13 @@ import indexReq from '@/api/index';
 const title = ref('Hello');
 
 const handleOpenScreen = async (oper:String) => {
-	console.log('操作');
-	const data = {
-		command:oper
+	
+	const body = {
+		cmd:oper,
+		deviceId:"esp01"
 	};
 	await indexReq
-		.reqBrightScreen(data)
+		.reqBrightScreen(body)
 		.then((res:any) => {
 			console.log(res)
 		})

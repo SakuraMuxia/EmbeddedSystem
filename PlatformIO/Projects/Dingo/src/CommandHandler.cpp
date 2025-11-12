@@ -1,11 +1,24 @@
 #include "CommandHandler.h"
 #include <BleComboKeyboard.h>
+#include <BleComboMouse.h>
 
 // 可以在这里初始化命令映射或日志
 void setupCommands()
 {
-    Serial.println("✅ 命令模块已初始化");
+    Serial.println("命令模块已初始化");
 }
+
+// 发送日志函数
+void sendLog(const String &log)
+{
+    if (ws.available())
+    {
+        ws.send("{\"type\":\"log\",\"message\":\"" + log + "\"}");
+    }
+    Serial.println("Log: " + log);
+}
+
+
 // 辅助函数：平滑鼠标移动
 void mouseMoveSmooth(int dx, int dy, int steps = 10, int stepDelay = 20)
 {
