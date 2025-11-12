@@ -1,9 +1,13 @@
 <template>
 	<view class="content">
 		<button @click="handleOpenScreen('click')" class="btn">亮屏</button>
-		<button @click="handleOpenScreen('unlock')" class="btn">解锁</button>
-		<button @click="handleOpenScreen('reset')" class="btn">复位</button>
-		<button @click="handleOpenScreen('rmtask')" class="btn">清缓存</button>
+		<button @click="handleOpenScreen('esc')" class="btn">取消</button>
+		<button @click="handleOpenScreen('enter')" class="btn">确认</button>
+		<button @click="handleOpenScreen('rmtask')" class="btn">任务</button>
+		<button @click="handleOpenScreen('right')" class="btn">右</button>
+		<button @click="handleOpenScreen('down')" class="btn">下</button>
+		<button @click="handleOpenScreen('tab')" class="btn">tab</button>
+		<button @click="handleOpenScreen('menu')" class="btn">菜单</button>
 		<button class="btn">发送回送日志</button>
 		<button class="btn">叮一下</button>
 	</view>

@@ -40,7 +40,7 @@ app.post("/log", (req, res) => {
 
 app.post("/api/operphone", (req, res) => {
   const { command } = req.body;
-  if (command === "click" || command === "swipe" || command === "ding" || command === "unlock" || command === "reset"|| command === "rmtask"){
+  if (command === "click" || command === "swipe" || command === "ding" || command === "tab"|| command === "menu"|| command === "right"|| command === "down" || command === "esc"|| command === "rmtask"|| command === "enter"){
     latestCommand = command; // 缓存最新指令
     console.log(`[指令接收] ${command}`);
     res.json(

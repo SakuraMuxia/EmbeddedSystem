@@ -1,9 +1,7 @@
 #pragma once
 #include <Arduino.h>
-#include <map>
-#include <functional>
-#include <BleMouse.h>
+#include <BleCombo.h> 
 
 // 外部传入 BLE 鼠标实例
-void setupCommands(BleMouse &mouse);
+void setupCommands();
 void handleCommand(const String &command);
