@@ -13,7 +13,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 
-const wsUrl = 'ws://192.168.1.245:3000/client';
+const wsUrl = 'ws://39.106.41.164:3000/client';
 const deviceId = 'browser01';
 const heartbeatInterval = 15000;
 

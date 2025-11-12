@@ -7,7 +7,7 @@ class Service {
 		const {params = {}, data = {}, header = {} } = options;
 		
         // 定义全局基础路由
-        const baseURL = 'http://127.0.0.1:3000';
+        const baseURL = 'http://39.106.41.164:3000';
 		
         // 加载效果开启
         // uni.showLoading({
