@@ -13,9 +13,8 @@ void sendLog(const String &log)
 {
     if (ws.available())
     {
-        ws.send("{\"type\":\"log\",\"message\":\"" + log + "\"}");
+        ws.send("{\"type\":\"log\",\"deviceId\":\"esp01\",\"message\":\"" + log + "\"}");
     }
-    Serial.println("Log: " + log);
 }
 
 

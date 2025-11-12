@@ -1,19 +1,18 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ArduinoWebsockets.h>
-
+#include <ArduinoJson.h>
 #include <BleComboKeyboard.h>
 #include <BleComboMouse.h>
 #include "CommandHandler.h"
 
 using namespace websockets;
 
-
 // ======== 配置信息 ========
 const char *ssid = "wangyuan1";
 const char *password = "wangyuan123$";
 const char *websocket_server = "ws://192.168.1.245:3000/esp"; // 替换为你的服务器地址
-const char *deviceId = "esp01";                              // 每个设备不同
+const char *deviceId = "esp01";                               // 每个设备不同
 // const char *serverUrl = "http://192.168.1.245:3000/command";
 // const char *logServerUrl = "http://192.168.1.245:3000/log";
 
@@ -69,7 +68,13 @@ void connectWiFi()
 // ======== 连接websocket ========
 void connectWebSocket()
 {
-  Serial.println("正在连接 WebSocket...");
+  if (ws.available())
+  {
+    Serial.println("WebSocket 已经连接，跳过连接");
+    return;
+  }
+
+  Serial.println("连接 WebSocket...");
 
   if (ws.connect(websocket_server))
   {
@@ -81,10 +86,10 @@ void connectWebSocket()
   else
   {
     isConnected = false;
-    Serial.println("WebSocket 连接失败，将稍后重试");
+    Serial.println("WebSocket 连接失败");
   }
 }
-// ========= 心跳函数 ========
+
 // ======== 心跳机制 ========
 void sendHeartbeat()
 {
@@ -101,12 +106,56 @@ void sendHeartbeat()
 }
 // ======== 发送结果到服务器 ========
 // ==== 发送执行结果 ====
-void sendResult(const String& result) {
-    if (isConnected) {
-        String json = "{\"type\":\"result\",\"deviceId\":\"" + String(deviceId) + "\",\"data\":\"" + result + "\"}";
-        ws.send(json);
+void sendResult(const String &result)
+{
+  if (isConnected)
+  {
+    String json = "{\"type\":\"result\",\"deviceId\":\"" + String(deviceId) + "\",\"data\":\"" + result + "\"}";
+    ws.send(json);
+  }
+  Serial.println("Result: " + result);
+}
+
+void parseAndExecuteCommand(const String &msg)
+{
+  Serial.println("收到服务器消息: " + msg);
+
+  String trimmedMsg = msg;
+  trimmedMsg.trim();
+
+  StaticJsonDocument<512> doc; // 512 字节栈空间
+  DeserializationError error = deserializeJson(doc, trimmedMsg);
+  if (error)
+  {
+    Serial.println("JSON 解析失败");
+    return;
+  }
+  // 读取 type
+  const char *type = doc["type"];
+  if (!type)
+  {
+    Serial.println("未找到 type 字段");
+    return;
+  }
+
+  // 仅处理 type 为 cmd
+  if (strcmp(type, "cmd") == 0)
+  {
+    const char *action = doc["action"];
+    if (action)
+    {
+      Serial.println("执行命令: " + String(action));
+      handleCommand(String(action)); // 调用你的命令处理函数
     }
-    Serial.println("Result: " + result);
+    else
+    {
+      Serial.println("未找到 action 字段");
+    }
+  }
+  else
+  {
+    Serial.println("type 不是 cmd，不执行操作");
+  }
 }
 
 // ======== WebSocket 回调 ========
@@ -114,18 +163,17 @@ void setupWebSocketCallbacks()
 {
   ws.onMessage([](WebsocketsMessage message)
                {
-                     String msg = message.data();
-                     Serial.println("收到服务器消息: " + msg);
-                     handleCommand(msg);
-                    
-                  });
+                 String msg = message.data();
+                 parseAndExecuteCommand(msg); });
 
   ws.onEvent([](WebsocketsEvent event, String data)
-             {
+             {    
+  // 如果 连接异常断开 没触发 ConnectionClosed（某些网络掉线情况），isConnected 仍然是 true
+  // 然后下一轮循环再次调用 connectWebSocket()，导致新的连接建立
+  // 所以你可能在无意间建立了多条连接
                    if (event == WebsocketsEvent::ConnectionClosed)
                    {
                        Serial.println("WebSocket 连接关闭");
-                       isConnected = false;
                    }
                    else if (event == WebsocketsEvent::GotPing)
                    {
@@ -157,6 +205,7 @@ void setup()
 
   // ===== WebSocket 初始化 =====
   setupWebSocketCallbacks();
+
   connectWebSocket();
 }
 
@@ -171,7 +220,7 @@ void loop()
   }
   // 检查 BLE 连接状态
   unsigned long now = millis();
-  
+
   if (now - lastBleCheck >= BLE_CHECK_INTERVAL)
   {
     lastBleCheck = now;
@@ -181,21 +230,21 @@ void loop()
       return; // 本轮直接跳过，不阻塞
     }
   }
-  // 保持 WebSocket 活跃
-    if (isConnected)
+  // WebSocket
+  if (ws.available())
+  {
+    ws.poll();
+    sendHeartbeat();
+  }
+  else
+  {
+    // 自动重连逻辑
+    if (now - lastReconnectAttempt > reconnectInterval)
     {
-        ws.poll();
-        sendHeartbeat();
+      lastReconnectAttempt = now;
+      connectWebSocket();
     }
-    else
-    {
-        // 自动重连逻辑
-        if (millis() - lastReconnectAttempt > reconnectInterval)
-        {
-            lastReconnectAttempt = millis();
-            connectWebSocket();
-        }
-    }
+  }
 
-    delay(10);
+  delay(10);
 }

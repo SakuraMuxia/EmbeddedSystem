@@ -14,7 +14,7 @@ const wss = new WebSocket.Server({ server });
 const PORT = process.env.PORT || 3000;
 
 // 存储连接
-const espMap = new Map();    // deviceId -> ws (ESP 连接)
+const espMap = new Map(); // deviceId -> ws (ESP 连接)
 const clientSet = new Set(); // 浏览器客户端集合 (接收日志)
 
 // 心跳设置 (用于清理断开的 ws)
@@ -24,7 +24,6 @@ const HEARTBEAT_INTERVAL = 30000; // 30s
 // We use URL path to differentiate ESP 和 浏览器 client:
 // ws://host:port/esp  -> ESP32 devices
 // ws://host:port/client -> browser log clients
-
 
 wss.on("connection", function connection(ws, req) {
   const url = req.url || "";
@@ -36,7 +35,7 @@ wss.on("connection", function connection(ws, req) {
   });
 
   if (url === "/esp") {
-    console.log("🔌 New ESP connection (unregistered)");
+    console.log("🔌 New ESP connection");
     // Temporarily store unregistered ESP under a Symbol key to find its ws on close
     ws._registeredId = null;
 
@@ -53,62 +52,87 @@ wss.on("connection", function connection(ws, req) {
       if (msg.type === "register" && msg.deviceId) {
         ws._registeredId = msg.deviceId;
         espMap.set(msg.deviceId, ws);
-        console.log(`✅ Registered device: ${msg.deviceId}`);
+        console.log(`ESP32注册上线: `, msg);
         // Broadcast device-online message to browser clients
-        broadcastToClients(JSON.stringify({
-          type: "device",
-          event: "online",
-          deviceId: msg.deviceId
-        }));
+        broadcastToClients(
+          JSON.stringify({
+            type: "device",
+            event: "online",
+            deviceId: msg.deviceId,
+          })
+        );
         return;
       }
 
       // Log/result message from ESP: { type: "log"|"result", deviceId:"esp01", data:"..." }
-      if (msg.type === "log" || msg.type === "result" || msg.type === "status") {
+      if (
+        msg.type === "log" ||
+        msg.type === "result" ||
+        msg.type === "status"
+      ) {
         // Add server timestamp for convenience
         const out = {
           ...msg,
-          ts: Date.now()
+          ts: Date.now(),
         };
         // Broadcast to all browser clients
         broadcastToClients(JSON.stringify(out));
-        console.log("Esp32回传数据:",JSON.stringify(out))
+        console.log("Esp32回传数据:", JSON.stringify(out));
         // Optionally: you might want to persist logs here (DB / file)
         return;
       }
 
       // If receives cmd ack etc, just broadcast
-      broadcastToClients(JSON.stringify({ from: msg.deviceId || ws._registeredId || "esp", raw: msg }));
-      console.log("Esp32回传数据:",JSON.stringify({ from: msg.deviceId || ws._registeredId || "esp", raw: msg }))
+      broadcastToClients(
+        JSON.stringify({
+          from: msg.deviceId || ws._registeredId || "esp",
+          raw: msg,
+        })
+      );
+      console.log(
+        "Esp32回传数据:",
+        JSON.stringify({
+          from: msg.deviceId || ws._registeredId || "esp",
+          raw: msg,
+        })
+      );
     });
 
     ws.on("close", () => {
       if (ws._registeredId) {
-        console.log(`❌ ESP disconnected: ${ws._registeredId}`);
+        console.log(`ESP32断开连接: ${ws._registeredId}`);
         espMap.delete(ws._registeredId);
-        broadcastToClients(JSON.stringify({
-          type: "device",
-          event: "offline",
-          deviceId: ws._registeredId,
-          ts: Date.now()
-        }));
+        broadcastToClients(
+          JSON.stringify({
+            type: "device",
+            event: "offline",
+            deviceId: ws._registeredId,
+            ts: Date.now(),
+          })
+        );
       } else {
-        console.log("❌ An unregistered ESP disconnected");
+        console.log("An unregistered ESP disconnected");
       }
     });
 
     ws.on("error", (err) => {
       console.warn("ESP socket error:", err.message || err);
     });
-  }
-
-  else if (url === "/client") {
-    console.log("🌐 New browser client connected");
+  } else if (url === "/client") {
+    console.log("New browser client connected");
     clientSet.add(ws);
 
     ws.on("message", (raw) => {
       // 可选：允许浏览器通过 websocket 订阅、取消订阅或发起一些交互
       // 例如 { type: "ping" } 或 { type:"listDevices" }
+      try {
+        const msg = JSON.parse(raw.toString());
+        console.log("收到浏览器消息:", msg);
+        // 根据 msg.type 处理
+      } catch (e) {
+        console.log("非 JSON 消息:", raw.toString());
+      }
+
       try {
         const msg = JSON.parse(raw.toString());
         if (msg && msg.type === "listDevices") {
@@ -130,9 +154,7 @@ wss.on("connection", function connection(ws, req) {
       clientSet.delete(ws);
       console.warn("Browser client ws error:", err.message || err);
     });
-  }
-
-  else {
+  } else {
     // 未识别路径的 ws 直接关闭
     console.log("Unknown ws path:", url);
     ws.close();
@@ -164,7 +186,9 @@ app.post("/api/operphone", (req, res) => {
 
   const espWs = espMap.get(deviceId);
   if (!espWs || espWs.readyState !== WebSocket.OPEN) {
-    res.status(404).json({ success: false, message: `设备 ${deviceId} 不在线` });
+    res
+      .status(404)
+      .json({ success: false, message: `设备 ${deviceId} 不在线` });
     return;
   }
 
@@ -173,19 +197,21 @@ app.post("/api/operphone", (req, res) => {
     deviceId,
     action: cmd,
     meta: meta || {},
-    ts: Date.now()
+    ts: Date.now(),
   });
 
   try {
     espWs.send(payload);
     // 同时把发送事件写入到浏览器日志流（通知所有浏览器）
-    broadcastToClients(JSON.stringify({
-      type: "server",
-      event: "sentCmd",
-      deviceId,
-      action: cmd,
-      ts: Date.now()
-    }));
+    broadcastToClients(
+      JSON.stringify({
+        type: "server",
+        event: "sentCmd",
+        deviceId,
+        action: cmd,
+        ts: Date.now(),
+      })
+    );
 
     res.json({ success: true, message: "命令已发送" });
   } catch (e) {
@@ -230,5 +256,7 @@ process.on("SIGINT", () => {
 
 server.listen(PORT, () => {
   console.log(`🚀 Server listening on http://0.0.0.0:${PORT}`);
-  console.log(`WebSocket paths: ws://<host>:${PORT}/esp  and  ws://<host>:${PORT}/client`);
+  console.log(
+    `WebSocket paths: ws://<host>:${PORT}/esp  and  ws://<host>:${PORT}/client`
+  );
 });

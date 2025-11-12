@@ -1,108 +1,170 @@
 <template>
 	<view class="container">
-		<view class="header">
-			<text class="title">ESP32 实时日志</text>
-			<button class="btn" @click="connectWS">连接</button>
-		</view>
-
-		<scroll-view class="log-box" scroll-y="true" :scroll-top="scrollTop">
+		<button @click="getConnections">获取连接列表</button>
+		<scroll-view ref="scrollView" class="log-container" scroll-y scroll-top="0">
 			<view v-for="(item, index) in logs" :key="index" class="log-item">
-				<text>[{{ item.time }}] {{ item.msg }}</text>
+				<text class="log-text">{{ item.message }}</text>
+				<text class="log-time">{{ item.time }}</text>
 			</view>
 		</scroll-view>
 	</view>
 </template>
 
-<script setup>
-import { ref } from 'vue';
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 
-const logs = ref([]);
-const scrollTop = ref(0);
-let ws = null;
+const wsUrl = 'ws://192.168.1.245:3000/client';
+const deviceId = 'browser01';
+const heartbeatInterval = 15000;
 
-// ✅ WebSocket 地址（换成你的 Node.js 服务器 IP）
-const WS_URL = 'ws://192.168.1.245:3000';
+const logs = ref<string[]>([]);
+const scrollView = ref<any>(null);
+const isConnected = ref(false);
+let ws: ReturnType<typeof uni.connectSocket> | null = null;
+let heartbeatTimer: number | null = null;
+let reconnectTimer: number | null = null;
 
-function appendLog(msg) {
-	logs.value.push({
-		time: new Date().toLocaleTimeString(),
-		msg
-	});
-	scrollTop.value = logs.value.length * 100;
+
+// 示例添加日志方法
+function addLog(message) {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString(); // 时分秒
+  logs.value.unshift({
+    message,
+    time: timeStr
+  });
+
+  // 滚动到顶部
+  nextTick(() => {
+    if (scrollView.value) scrollView.value.scrollTop = 0;
+  });
 }
 
-// ✅ 建立 WebSocket 连接
-function connectWS() {
-	if (ws) {
-		ws.close();
-		ws = null;
+/** ================= WebSocket ================= */
+function initWebSocket() {
+	if (ws && isConnected.value) {
+		console.log('WebSocket 已连接，无需重复连接');
+		return;
 	}
 
-	ws = uni.connectSocket({
-		url: WS_URL,
-		success() {
-			appendLog('✅ 尝试连接 WebSocket...');
-		}
+	ws = uni.connectSocket({ url: wsUrl });
+	console.log('WebSocket 对象已创建');
+
+	uni.onSocketOpen(() => {
+		console.log('WebSocket 已连接');
+		isConnected.value = true;
+		sendMessage('register', { deviceId });
+		startHeartbeat();
 	});
 
-	// 监听事件
-	ws.onOpen(() => {
-		appendLog('🔗 WebSocket 已连接');
-	});
-
-	ws.onMessage((res) => {
+	uni.onSocketMessage((res) => {
+		console.log('收到服务器消息:', res);
+		// 处理 JSON 消息
 		try {
-			const data = JSON.parse(res.data);
-			appendLog('📩 收到日志: ' + JSON.stringify(data));
+			const msg = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+			if (msg.type === 'ping') {
+				sendMessage('pong', { deviceId });
+			} else {
+				// 添加日志
+				addLog(msg)
+			}
 		} catch (e) {
-			appendLog('📩 收到原始信息: ' + res.data);
+			logs.value.unshift(res.data);
 		}
 	});
 
-	ws.onClose(() => {
-		appendLog('⚠️ WebSocket 已断开');
+	uni.onSocketClose(() => {
+		console.warn('WebSocket 已关闭');
+		isConnected.value = false;
+		stopHeartbeat();
+		ws = null;
+		scheduleReconnect();
 	});
 
-	ws.onError((err) => {
-		appendLog('❌ WebSocket 错误: ' + JSON.stringify(err));
+	uni.onSocketError((err) => {
+		console.error('WebSocket 错误:', err);
+		isConnected.value = false;
+		stopHeartbeat();
+		ws = null;
+		scheduleReconnect();
 	});
 }
+
+function sendMessage(type: string, data: any) {
+	if (!isConnected.value) return;
+	const payload = {
+		type,
+		deviceId,
+		...data
+	};
+	uni.sendSocketMessage({ data: JSON.stringify(payload) });
+}
+
+function startHeartbeat() {
+	stopHeartbeat();
+	heartbeatTimer = setInterval(() => {
+		if (isConnected.value) {
+			sendMessage('ping', {});
+			console.log('发送心跳');
+		}
+	}, heartbeatInterval);
+}
+
+function stopHeartbeat() {
+	if (heartbeatTimer) clearInterval(heartbeatTimer);
+	heartbeatTimer = null;
+}
+
+function scheduleReconnect() {
+	if (reconnectTimer) return;
+	reconnectTimer = setTimeout(() => {
+		reconnectTimer = null;
+		console.log('尝试重新连接 WebSocket...');
+		initWebSocket();
+	}, 5000);
+}
+const getConnections = () => {
+	sendMessage('listDevices', {});
+};
+/** ================= 页面生命周期 ================= */
+onMounted(() => {
+	initWebSocket();
+});
+
+onBeforeUnmount(() => {
+	if (ws) uni.closeSocket();
+	stopHeartbeat();
+	if (reconnectTimer) clearTimeout(reconnectTimer);
+});
 </script>
-
-<style lang="scss" scoped>
+<style scoped>
 .container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background-color: #111;
-  color: #0f0;
-  padding: 20rpx;
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.title {
-  font-size: 36rpx;
-  color: #0f0;
-}
-.btn {
-  background-color: #222;
-  color: #0f0;
-  padding: 12rpx 24rpx;
-  border-radius: 12rpx;
-}
-.log-box {
   flex: 1;
-  margin-top: 20rpx;
-  border: 1rpx solid #333;
-  background-color: #000;
-  border-radius: 12rpx;
-  padding: 16rpx;
+  padding: 10px;
 }
-.log-item {
-  margin-bottom: 12rpx;
-}	
 
+.log-container {
+  height: 100%;
+}
+
+.log-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  flex-wrap: wrap; /* 允许换行 */
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.log-text {
+  flex: 1 1 auto; /* 文本自适应宽度 */
+  word-break: break-word; /* 换行显示 */
+}
+
+.log-time {
+  flex: 0 0 auto;
+  margin-left: 5px;
+  color: #999;
+  font-size: 12px;
+}
 </style>
