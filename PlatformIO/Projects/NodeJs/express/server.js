@@ -22,8 +22,8 @@ const espMap = new Map(); // deviceId -> ws
 const clientMap = new Map(); // clientId -> ws
 
 // 心跳参数
-const HEARTBEAT_INTERVAL = 30000; // 30s
-const PONG_TIMEOUT = 60000; // 60s
+const HEARTBEAT_INTERVAL = 1000; // 30s
+const PONG_TIMEOUT = 3000; // 60s
 
 // 广播消息给所有浏览器客户端
 function broadcastToClients(message) {
