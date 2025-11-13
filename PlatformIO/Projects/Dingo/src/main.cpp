@@ -241,7 +241,6 @@ void setupWebSocketCallbacks()
       case WebsocketsEvent::GotPing:
         ws.pong();
         Serial.println("📡 收到服务器 Ping → 已回复 Pong");
-        ws.poll();  // 立即刷新队列
         lastPongTime = millis();
         break;
 
