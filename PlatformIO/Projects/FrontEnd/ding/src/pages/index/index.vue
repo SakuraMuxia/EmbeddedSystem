@@ -23,7 +23,7 @@ const handleOpenScreen = async (oper:String) => {
 	
 	const body = {
 		cmd:oper,
-		deviceId:"esp01"
+		deviceId:"esp32-0000_B853_70A5_0528"
 	};
 	await indexReq
 		.reqBrightScreen(body)

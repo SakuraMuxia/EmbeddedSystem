@@ -1,141 +1,52 @@
 <template>
 	<view class="container">
-		<button @click="getConnections">获取连接列表</button>
-		<scroll-view ref="scrollView" class="log-container" scroll-y scroll-top="0">
-			<view v-for="(item, index) in logs" :key="index" class="log-item">
-				<text class="log-text">{{ item.message }}</text>
-				<text class="log-time">{{ item.time }}</text>
-			</view>
-		</scroll-view>
+		
+		
 	</view>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import req from '@/api/index'
+import {getWebSocketInstance} from '@/utils/getSocketIns'
 
-const wsUrl = 'ws://39.106.41.164:3000/client';
-const deviceId = 'browser01';
-const heartbeatInterval = 15000;
+const ws = getWebSocketInstance()
 
-const logs = ref<string[]>([]);
-const scrollView = ref<any>(null);
-const isConnected = ref(false);
-let ws: ReturnType<typeof uni.connectSocket> | null = null;
-let heartbeatTimer: number | null = null;
-let reconnectTimer: number | null = null;
-
-
-// 示例添加日志方法
-function addLog(message) {
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString(); // 时分秒
-  logs.value.unshift({
-    message,
-    time: timeStr
-  });
-
-  // 滚动到顶部
-  nextTick(() => {
-    if (scrollView.value) scrollView.value.scrollTop = 0;
-  });
-}
-
-/** ================= WebSocket ================= */
-function initWebSocket() {
-	if (ws && isConnected.value) {
-		console.log('WebSocket 已连接，无需重复连接');
-		return;
-	}
-
-	ws = uni.connectSocket({ url: wsUrl });
-	console.log('WebSocket 对象已创建');
-
-	uni.onSocketOpen(() => {
-		console.log('WebSocket 已连接');
-		isConnected.value = true;
-		sendMessage('register', { deviceId });
-		startHeartbeat();
-	});
-
-	uni.onSocketMessage((res) => {
-		console.log('收到服务器消息:', res);
-		// 处理 JSON 消息
-		try {
-			const msg = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-			if (msg.type === 'ping') {
-				sendMessage('pong', { deviceId });
-			} else {
-				// 添加日志
-				addLog(msg)
-			}
-		} catch (e) {
-			logs.value.unshift(res.data);
-		}
-	});
-
-	uni.onSocketClose(() => {
-		console.warn('WebSocket 已关闭');
-		isConnected.value = false;
-		stopHeartbeat();
-		ws = null;
-		scheduleReconnect();
-	});
-
-	uni.onSocketError((err) => {
-		console.error('WebSocket 错误:', err);
-		isConnected.value = false;
-		stopHeartbeat();
-		ws = null;
-		scheduleReconnect();
-	});
-}
-
-function sendMessage(type: string, data: any) {
-	if (!isConnected.value) return;
-	const payload = {
-		type,
-		deviceId,
-		...data
-	};
-	uni.sendSocketMessage({ data: JSON.stringify(payload) });
-}
-
-function startHeartbeat() {
-	stopHeartbeat();
-	heartbeatTimer = setInterval(() => {
-		if (isConnected.value) {
-			sendMessage('ping', {});
-			console.log('发送心跳');
-		}
-	}, heartbeatInterval);
-}
-
-function stopHeartbeat() {
-	if (heartbeatTimer) clearInterval(heartbeatTimer);
-	heartbeatTimer = null;
-}
-
-function scheduleReconnect() {
-	if (reconnectTimer) return;
-	reconnectTimer = setTimeout(() => {
-		reconnectTimer = null;
-		console.log('尝试重新连接 WebSocket...');
-		initWebSocket();
-	}, 5000);
-}
-const getConnections = () => {
-	sendMessage('listDevices', {});
+// 注册函数
+const registClient = () => {
+  if (ws.socketOpen) {
+    ws.send({ type: 'register', clientId: 'browser_001' });
+  } else {
+    setTimeout(registClient, 500);
+  }
 };
-/** ================= 页面生命周期 ================= */
-onMounted(() => {
-	initWebSocket();
+
+// 接收消息
+ws.onMessage((data) => {
+  let msg;
+  try {
+    msg = typeof data === 'string' ? JSON.parse(data) : data;
+  } catch (e) {
+    console.warn('收到非 JSON 消息', data);
+    return;
+  }
+  console.log("msg",msg)
 });
 
-onBeforeUnmount(() => {
-	if (ws) uni.closeSocket();
-	stopHeartbeat();
-	if (reconnectTimer) clearTimeout(reconnectTimer);
-});
+// 发送消息
+function sendMessage(action: string, payload: any) {
+  if (!ws.socketOpen) {
+    console.warn('WebSocket 未连接，消息发送失败', action);
+    return;
+  }
+  ws.send({ type: action, ...payload, ts: Date.now() });
+}
+
+
+onMounted(()=>{
+	registClient();
+})
+
 </script>
 <style scoped>
 .container {

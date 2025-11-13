@@ -1,42 +1,57 @@
-// server.js
 const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
 const cors = require("cors");
 
 const app = express();
-app.use(cors());
 app.use(express.json());
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+app.options("*", (req, res) => res.sendStatus(200));
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
-
 const PORT = process.env.PORT || 3000;
 
-// 存储连接
-const espMap = new Map(); // deviceId -> ws (ESP 连接)
-const clientSet = new Set(); // 浏览器客户端集合 (接收日志)
+const espMap = new Map(); // deviceId -> ws
+const clientMap = new Map(); // clientId -> ws
 
-// 心跳设置 (用于清理断开的 ws)
+// 心跳参数
 const HEARTBEAT_INTERVAL = 30000; // 30s
+const PONG_TIMEOUT = 60000; // 60s
 
-// --- WebSocket connection handling ---
-// We use URL path to differentiate ESP 和 浏览器 client:
-// ws://host:port/esp  -> ESP32 devices
-// ws://host:port/client -> browser log clients
+// 广播消息给所有浏览器客户端
+function broadcastToClients(message) {
+  for (const ws of clientMap.values()) {
+    if (ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(message);
+      } catch (e) {
+        console.warn("Failed to send:", e.message || e);
+      }
+    }
+  }
+}
 
-wss.on("connection", function connection(ws, req) {
-  const url = req.url || "";
-
-  // mark alive for heartbeat
+// WebSocket 连接处理
+wss.on("connection", (ws, req) => {
   ws.isAlive = true;
+  ws.lastPong = Date.now();
+  
   ws.on("pong", () => {
     ws.isAlive = true;
+    ws.lastPong = Date.now();
+    console.log(`✅ 收到 ${ws._registeredId || ws._clientId || "未注册"} 的 pong`);
   });
 
+  const url = req.url || "";
+
   if (url === "/esp") {
-    console.log("🔌 New ESP connection");
-    // Temporarily store unregistered ESP under a Symbol key to find its ws on close
     ws._registeredId = null;
 
     ws.on("message", (raw) => {
@@ -48,59 +63,46 @@ wss.on("connection", function connection(ws, req) {
         return;
       }
 
-      // Register message: { type: "register", deviceId: "esp01" }
       if (msg.type === "register" && msg.deviceId) {
         ws._registeredId = msg.deviceId;
+
+        // 断开旧连接
+        if (espMap.has(msg.deviceId)) {
+          const oldWs = espMap.get(msg.deviceId);
+
+          // 如果旧连接仍然是OPEN状态，并且不是当前连接
+          if (oldWs !== ws && oldWs.readyState === WebSocket.OPEN) {
+            console.log(`⚠️ 发现重复 deviceId，断开旧连接: ${msg.deviceId}`);
+            oldWs.terminate();
+          }
+        }
+
         espMap.set(msg.deviceId, ws);
-        console.log(`ESP32注册上线: `, msg);
-        // Broadcast device-online message to browser clients
+        console.log(`✅ ESP32上线: ${msg.deviceId}`);
+
         broadcastToClients(
           JSON.stringify({
             type: "device",
             event: "online",
             deviceId: msg.deviceId,
+            ts: Date.now(),
           })
         );
         return;
       }
 
-      // Log/result message from ESP: { type: "log"|"result", deviceId:"esp01", data:"..." }
       if (
         msg.type === "log" ||
         msg.type === "result" ||
         msg.type === "status"
       ) {
-        // Add server timestamp for convenience
-        const out = {
-          ...msg,
-          ts: Date.now(),
-        };
-        // Broadcast to all browser clients
-        broadcastToClients(JSON.stringify(out));
-        console.log("Esp32回传数据:", JSON.stringify(out));
-        // Optionally: you might want to persist logs here (DB / file)
-        return;
+        broadcastToClients(JSON.stringify({ ...msg, ts: Date.now() }));
+        console.log("ESP32数据:", JSON.stringify(msg));
       }
-
-      // If receives cmd ack etc, just broadcast
-      broadcastToClients(
-        JSON.stringify({
-          from: msg.deviceId || ws._registeredId || "esp",
-          raw: msg,
-        })
-      );
-      console.log(
-        "Esp32回传数据:",
-        JSON.stringify({
-          from: msg.deviceId || ws._registeredId || "esp",
-          raw: msg,
-        })
-      );
     });
 
     ws.on("close", () => {
       if (ws._registeredId) {
-        console.log(`ESP32断开连接: ${ws._registeredId}`);
         espMap.delete(ws._registeredId);
         broadcastToClients(
           JSON.stringify({
@@ -110,87 +112,65 @@ wss.on("connection", function connection(ws, req) {
             ts: Date.now(),
           })
         );
-      } else {
-        console.log("An unregistered ESP disconnected");
+        console.log(`ESP32断开: ${ws._registeredId}`);
       }
     });
 
-    ws.on("error", (err) => {
-      console.warn("ESP socket error:", err.message || err);
-    });
+    ws.on("error", (err) => console.warn("ESP32错误:", err.message || err));
   } else if (url === "/client") {
-    console.log("New browser client connected");
-    clientSet.add(ws);
-
+    ws._clientId = null;
     ws.on("message", (raw) => {
-      // 可选：允许浏览器通过 websocket 订阅、取消订阅或发起一些交互
-      // 例如 { type: "ping" } 或 { type:"listDevices" }
       try {
         const msg = JSON.parse(raw.toString());
-        console.log("收到浏览器消息:", msg);
-        // 根据 msg.type 处理
-      } catch (e) {
-        console.log("非 JSON 消息:", raw.toString());
-      }
+        if (msg.type === "register" && msg.clientId) {
+          const clientId = msg.clientId;
 
-      try {
-        const msg = JSON.parse(raw.toString());
-        if (msg && msg.type === "listDevices") {
-          // 返回当前在线设备列表
-          const devices = [...espMap.keys()];
-          ws.send(JSON.stringify({ type: "deviceList", devices }));
+          if (clientMap.has(clientId)) {
+            const oldWs = clientMap.get(clientId);
+            console.log(`断开旧浏览器连接: ${clientId}`);
+            oldWs.terminate();
+          }
+
+          clientMap.set(clientId, ws);
+          ws._clientId = clientId;
+          console.log(`🌐 浏览器客户端上线: ${clientId}`);
         }
       } catch (e) {
-        // ignore non-json or arbitrary messages
+        console.log("非 JSON 消息:", raw.toString());
       }
     });
 
     ws.on("close", () => {
-      clientSet.delete(ws);
-      console.log("🌐 Browser client disconnected");
+      if (ws._clientId) {
+        clientMap.delete(ws._clientId);
+        console.log(`浏览器客户端断开: ${ws._clientId}`);
+      }
     });
 
     ws.on("error", (err) => {
-      clientSet.delete(ws);
-      console.warn("Browser client ws error:", err.message || err);
+      if (ws._clientId) clientMap.delete(ws._clientId);
+      console.warn("浏览器客户端错误:", err.message || err);
     });
   } else {
-    // 未识别路径的 ws 直接关闭
-    console.log("Unknown ws path:", url);
+    console.log("未知路径:", url);
     ws.close();
   }
 });
-// 广播给所有浏览器客户端（/client）
-function broadcastToClients(message) {
-  for (const c of clientSet) {
-    if (c.readyState === WebSocket.OPEN) {
-      try {
-        c.send(message);
-      } catch (e) {
-        console.warn("Failed to send to client:", e.message || e);
-      }
-    }
-  }
-}
 
 // --- HTTP API ---
-// POST /api/sendCmd
-// body: { deviceId: "esp01", cmd: "move_up", meta: {...} }
-// 如果设备在线则立即通过 ws 转发：{ type: "cmd", data: "...", meta: {...} }
+// HTTP API
 app.post("/api/operphone", (req, res) => {
   const { deviceId, cmd, meta } = req.body || {};
-  if (!deviceId || !cmd) {
-    res.status(400).json({ success: false, message: "需要 deviceId 和 cmd" });
-    return;
-  }
+  if (!deviceId || !cmd)
+    return res
+      .status(400)
+      .json({ success: false, message: "需要 deviceId 和 cmd" });
 
   const espWs = espMap.get(deviceId);
-  if (!espWs || espWs.readyState !== WebSocket.OPEN) {
-    res
+  if (!espWs || espWs.readyState !== WebSocket.OPEN)
+    return res
       .status(404)
       .json({ success: false, message: `设备 ${deviceId} 不在线` });
-    return;
-  }
 
   const payload = JSON.stringify({
     type: "cmd",
@@ -199,10 +179,10 @@ app.post("/api/operphone", (req, res) => {
     meta: meta || {},
     ts: Date.now(),
   });
-
   try {
+    // 发送命令给 ESP32
     espWs.send(payload);
-    // 同时把发送事件写入到浏览器日志流（通知所有浏览器）
+    // 广播
     broadcastToClients(
       JSON.stringify({
         type: "server",
@@ -212,41 +192,62 @@ app.post("/api/operphone", (req, res) => {
         ts: Date.now(),
       })
     );
-
+    // 返回响应
     res.json({ success: true, message: "命令已发送" });
   } catch (e) {
-    console.error("Failed to send cmd to esp:", e);
+    console.error("发送命令失败:", e);
     res.status(500).json({ success: false, message: "发送命令失败" });
   }
 });
 
-// 查询在线设备
-app.get("/api/devices", (req, res) => {
-  res.json({ devices: [...espMap.keys()] });
+app.get("/api/esp-status", (req, res) => {
+  const list = [];
+  for (const [deviceId, ws] of espMap.entries())
+    list.push({ deviceId, alive: ws.isAlive, readyState: ws.readyState });
+  res.json({ count: list.length, devices: list });
 });
 
-// health
-app.get("/api/health", (req, res) => res.json({ ok: true, ts: Date.now() }));
-
-// --- Heartbeat clean-up for dead sockets ---
-// Regularly ping clients and esp sockets; if no pong within interval mark isAlive false and terminate.
+// 心跳检测 (只用 isAlive + lastPong)
 const interval = setInterval(() => {
-  wss.clients.forEach((socket) => {
-    if (socket.isAlive === false) {
-      console.log("Terminating dead socket");
-      return socket.terminate();
-    }
+  for (const socket of wss.clients) {
+    // 假连接
+    const isZombie =
+      !socket.isAlive ||
+      (socket.lastPong && Date.now() - socket.lastPong > PONG_TIMEOUT);
+    if (isZombie) {
+      if (socket._registeredId && espMap.has(socket._registeredId)) {
+        console.log(`清理死ESP32连接: ${socket._registeredId}`);
+        espMap.delete(socket._registeredId);
 
+        broadcastToClients(
+          JSON.stringify({
+            type: "device",
+            event: "offline",
+            deviceId: socket._registeredId,
+            ts: Date.now(),
+          })
+        );
+      }
+
+      if (socket._clientId && clientMap.has(socket._clientId)) {
+        console.log(`清理死浏览器连接: ${socket._clientId}`);
+        clientMap.delete(socket._clientId);
+      }
+      // 断开连接
+      socket.terminate();
+      console.log("连接已终止");
+      continue;
+    }
+    // 标记为待检测
     socket.isAlive = false;
     try {
       socket.ping();
     } catch (e) {
-      // may throw if socket already closing
+      console.warn("Ping失败:", e.message || e);
     }
-  });
+  }
 }, HEARTBEAT_INTERVAL);
 
-// Cleanup on exit
 process.on("SIGINT", () => {
   clearInterval(interval);
   console.log("Shutting down server...");

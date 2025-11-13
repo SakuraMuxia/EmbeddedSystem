@@ -8,6 +8,11 @@ class Request extends Service{
 			data:body
 		})
 	}
+	reqEspStatus(){
+		return this.get({
+			url:'/api/esp-status'
+		})
+	}
 }
 
 export default new Request;
