@@ -29,9 +29,11 @@ const handleOpenScreen = async (oper:String) => {
 		.postCommand(body)
 		.then((res:any) => {
 			console.log(res)
+			// 消息提示
 		})
 		.catch((err:any) => {
 			console.log(err)
+			// 消息提示
 		});
 };
 </script>

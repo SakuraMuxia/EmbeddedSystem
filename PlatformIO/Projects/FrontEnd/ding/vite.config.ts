@@ -12,5 +12,13 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		include: ['@dcloudio/uni-ui']
-	}
+	},
+	css: {
+	    preprocessorOptions: {
+	      scss: {
+	        // 忽略 deprecation 警告
+	        quietDeps: true
+	      }
+	    }
+	  }
 });
