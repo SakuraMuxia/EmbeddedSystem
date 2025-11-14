@@ -36,7 +36,7 @@
 						<view class="name">{{ item.action }}</view>
 					</uni-td>
 					<uni-td align="center">{{ item.result }}</uni-td>
-					<uni-td align="center">{{ item.message }}</uni-td>
+					<uni-td align="center">{{ item.msg }}</uni-td>
 					<uni-td align="center">{{ item.time }}</uni-td>
 				</uni-tr>
 			</uni-table>

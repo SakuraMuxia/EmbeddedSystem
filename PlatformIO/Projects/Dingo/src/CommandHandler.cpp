@@ -96,7 +96,17 @@ void pressEsc()
     delay(100);
     Keyboard.release(KEY_ESC);
 }
+void press2Esc()
+{
+    Keyboard.press(KEY_ESC);
+    delay(100);
+    Keyboard.release(KEY_ESC);
+    delay(100);
+    Keyboard.press(KEY_ESC);
+    delay(100);
+    Keyboard.release(KEY_ESC);
 
+}
 void pressBackspace()
 {
     Keyboard.press(KEY_BACKSPACE);
@@ -145,9 +155,9 @@ void clickDing()
 {
     // 复位
     mouseMoveSmooth(-600, -1000);
-    delay(300);
+    delay(500);
     // 移动到中心
-    mouseMoveSmooth(180, 650);
+    mouseMoveSmooth(180, 630);
     delay(1000);
     Mouse.click(MOUSE_LEFT);
 }
@@ -162,15 +172,97 @@ void handleCommand(const String &command)
     // 鼠标操作
     if (command == "clockIn")
     {
-        
+        // 解锁屏幕
+        unlockScreen();
+        delay(2000);
+
+        // 点击钉应用图标
+        pressAltTab();
+        delay(200);
+        pressAltTab();
+        delay(2000);
+
+        // 切换到打卡界面
+        for (int i = 0; i < 9; i++){
+            pressTab();
+            delay(200);
+        }
+        delay(200);
+        pressEnter();
+        delay(400);
+
+        delay(4000);
+        // 点击打卡按钮
+        clickDing();
+        delay(5000);
+
+        // 返回手机桌面
+        // 按 8 下 Tab 键
+        for (int i = 0; i < 6; i++){
+            pressTab();
+            delay(200);
+        }
+        delay(200);
+        // 按 Enter 键
+        pressEnter();
+        delay(200);
+        pressEsc();
+        delay(400);
+        press2Esc();
+        sendLog("clockIn","success","已完成打卡操作");
+
+
     }else if (command == "unlock")
     {
         unlockScreen();
         sendLog("unlock","success","屏幕已解锁");
     }
+    else if (command == "2altTab")
+    {
+        pressAltTab();
+        delay(200);
+        pressAltTab();
+        sendLog("2altTab","success","已切换到应用");
+    }
+    else if (command == "swipeDing")
+    {
+        clickDing();
+        sendLog("swipeDing","success","已点击钉");
+    }
+    else if (command == "switchDk9")
+    {   
+        // 按 9 下 Tab 键
+        for (int i = 0; i < 9; i++){
+            pressTab();
+            delay(200);
+        }
+        delay(200);
+        // 按 Enter 键
+        pressEnter();
+        sendLog("switchDk9","success","已切换到打卡界面");
+    }
+    
+    else if (command == "switchFh")
+    {   
+        // 按 8 下 Tab 键
+        for (int i = 0; i < 6; i++){
+            pressTab();
+            delay(200);
+        }
+        delay(200);
+        // 按 Enter 键
+        pressEnter();
+        delay(200);
+        pressEsc();
+        delay(400);
+        press2Esc();
+        sendLog("switchFh","success","已切换到分红界面");
+        
+    }
     else if (command == "altTab")
     {
         pressAltTab();
+        sendLog("altTab","success","已切换到上一个应用");
     }
     else if (command == "upArrow")
     {
@@ -191,30 +283,44 @@ void handleCommand(const String &command)
     else if (command == "enter")
     {
         pressEnter();
+        sendLog("enter","success","已发送回车键");
     }
     else if (command == "esc")
     {
         pressEsc();
+        sendLog("esc","success","已发送Esc键");
+    }
+    else if (command == "2esc")
+    {
+        pressEsc();
+        delay(200);
+        pressEsc();
+        sendLog("2esc","success","已发送两次Esc键");
     }
     else if (command == "backspace")
     {
         pressBackspace();
+        sendLog("backspace","success","已发送退格键");
     }
     else if (command == "tab")
     {
         pressTab();
+        sendLog("tab","success","已发送Tab键");
     }
     else if (command == "clickMouse")
     {
         clickMouse();
+        sendLog("clickMouse","success","已点击鼠标");
     }
     else if (command == "startMenu")
     {
         openStartMenu();
+        sendLog("startMenu","success","已打开开始菜单");
     }
     else if (command == "minimizeWindow")
     {
         minimizeCurrentWindow();
+        sendLog("minimizeWindow","success","已最小化当前窗口");
     }
     else
     {

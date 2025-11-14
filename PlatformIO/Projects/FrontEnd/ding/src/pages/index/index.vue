@@ -1,15 +1,16 @@
 <template>
 	<view class="content">
 		<button @click="handleOpenScreen('unlock')" class="btn">解锁</button>
+		<button @click="handleOpenScreen('2altTab')" class="btn">2altTab</button>
+		<button @click="handleOpenScreen('switchDk9')" class="btn">切换到应用9</button>
+		<button @click="handleOpenScreen('switchFh')" class="btn">返回应用首页</button>
+		<button @click="handleOpenScreen('2esc')" class="btn">两次取消</button>
 		<button @click="handleOpenScreen('esc')" class="btn">取消</button>
 		<button @click="handleOpenScreen('enter')" class="btn">确认</button>
-		<button @click="handleOpenScreen('rmtask')" class="btn">任务</button>
-		<button @click="handleOpenScreen('right')" class="btn">右</button>
-		<button @click="handleOpenScreen('down')" class="btn">下</button>
+		<button @click="handleOpenScreen('clockIn')" class="btn">DK</button>
 		<button @click="handleOpenScreen('tab')" class="btn">tab</button>
 		<button @click="handleOpenScreen('menu')" class="btn">菜单</button>
-		<button @click="handleOpenScreen('ding')" class="btn">相机</button>
-		<button @click="handleOpenScreen('back')" class="btn">返回</button>
+		<button @click="handleOpenScreen('minimizeWindow')" class="btn">返回</button>
 		<button @click="logout()" class="btn">退出登陆</button>
 	</view>
 </template>
