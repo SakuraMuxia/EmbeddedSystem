@@ -1,9 +1,8 @@
 <template>
 	<view class="content">
 		<view class="title">登录</view>
-		<input class="input" v-model="username" placeholder="用户名：admin" />
-		<input class="input" v-model="password" type="password" placeholder="密码：123456" />
-
+		<input class="input" v-model="username"  />
+		<input class="input" v-model="password" type="password"/>
 		<button class="btn" @click="handleLogin">登 录</button>
 	</view>
 </template>

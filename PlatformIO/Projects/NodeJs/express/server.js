@@ -280,7 +280,7 @@ app.post("/api/login", (req, res) => {
   const { username, password } = req.body || {};
 
   // 简单账号密码校验
-  if (username !== "admin" || password !== "123456") {
+  if (username !== "hanser" || password !== "7758521521") {
     return res.status(401).json({ success: false, message: "账号或密码错误" });
   }
 
