@@ -8,16 +8,6 @@ void setupCommands()
     Serial.println("命令模块已初始化");
 }
 
-// 发送日志函数
-void sendLog(const String &log)
-{
-    if (ws.available())
-    {
-        ws.send("{\"type\":\"log\",\"deviceId\":\"esp01\",\"message\":\"" + log + "\"}");
-    }
-}
-
-
 // 辅助函数：平滑鼠标移动
 void mouseMoveSmooth(int dx, int dy, int steps = 10, int stepDelay = 20)
 {
@@ -37,6 +27,131 @@ void swipe(int dx, int dy, int steps = 15, int stepDelay = 20)
     mouseMoveSmooth(dx, dy, steps, stepDelay);
     Mouse.release(MOUSE_LEFT);
 }
+
+// 模拟 Alt+Tab 切换窗口
+void pressAltTab()
+{
+    Keyboard.press(KEY_LEFT_ALT);
+    Keyboard.press(KEY_TAB);
+    delay(150);
+    Keyboard.release(KEY_TAB);
+    Keyboard.release(KEY_LEFT_ALT);
+}
+
+// 解锁屏幕
+void unlockScreen()
+{
+    Mouse.click(MOUSE_LEFT);
+    delay(1000);
+    // 复位
+    mouseMoveSmooth(-600, -1000);
+    delay(300);
+    // 移动到中心
+    mouseMoveSmooth(300, 500);
+    // 滑动
+    swipe(0, -400); // 向上滑动
+}
+
+// 方向右
+void pressRightArrow()
+{
+    Keyboard.press(KEY_RIGHT_ARROW);
+    delay(100);
+    Keyboard.release(KEY_RIGHT_ARROW);
+}
+// 方向左
+void pressLeftArrow()
+{
+    Keyboard.press(KEY_LEFT_ARROW);
+    delay(100);
+    Keyboard.release(KEY_LEFT_ARROW);
+}
+
+// 方向右
+void pressUpArrow()
+{
+    Keyboard.press(KEY_UP_ARROW);
+    delay(100);
+    Keyboard.release(KEY_UP_ARROW);
+}
+
+// 方向xia
+void pressDownArrow()
+{
+    Keyboard.press(KEY_DOWN_ARROW);
+    delay(100);
+    Keyboard.release(KEY_DOWN_ARROW);
+}
+
+void pressEnter()
+{
+    Keyboard.press(KEY_RETURN);
+    delay(100);
+    Keyboard.release(KEY_RETURN);
+}
+
+void pressEsc()
+{
+    Keyboard.press(KEY_ESC);
+    delay(100);
+    Keyboard.release(KEY_ESC);
+}
+
+void pressBackspace()
+{
+    Keyboard.press(KEY_BACKSPACE);
+    delay(100);
+    Keyboard.release(KEY_BACKSPACE);
+}
+
+void pressTab()
+{
+    Keyboard.press(KEY_TAB);
+    delay(100);
+    Keyboard.release(KEY_TAB);
+}
+
+void clickMouse()
+{
+    Mouse.click(MOUSE_LEFT);
+}
+
+void openStartMenu()
+{
+    Keyboard.press(KEY_LEFT_GUI);
+    delay(100);
+    Keyboard.release(KEY_LEFT_GUI);
+}
+
+void closeCurrentWindow()
+{
+    Keyboard.press(KEY_LEFT_GUI);
+    Keyboard.press('W');
+    delay(100);
+    Keyboard.release('W');
+    Keyboard.release(KEY_LEFT_GUI);
+}
+
+void minimizeCurrentWindow()
+{
+    Keyboard.press(KEY_LEFT_GUI);
+    Keyboard.press('D');
+    delay(100);
+    Keyboard.release('D');
+    Keyboard.release(KEY_LEFT_GUI);
+}
+
+void clickDing()
+{
+    // 复位
+    mouseMoveSmooth(-600, -1000);
+    delay(300);
+    // 移动到中心
+    mouseMoveSmooth(180, 650);
+    delay(1000);
+    Mouse.click(MOUSE_LEFT);
+}
+
 // 处理命令
 void handleCommand(const String &command)
 {
@@ -45,107 +160,65 @@ void handleCommand(const String &command)
         return;
     }
     // 鼠标操作
-    if (command == "click")
-    {   
-        Mouse.click(MOUSE_LEFT);
-        delay(1000);
-        // 复位
-        mouseMoveSmooth(-600,-1000);
-        delay(300);
-        // 移动到中心
-        mouseMoveSmooth(300,500);
-        // 滑动
-        swipe(0, -400); // 向上滑动
-    }
-    else if (command == "MOVE_DOWN")
-    {
-        // 平滑移动，避免偏差
-        for (int i = 0; i < 10; i++)
-        {
-            Mouse.move(0, 10);
-            delay(20);
-        }
-    }
-    else if (command == "MOVE_UP")
-    {
-        for (int i = 0; i < 10; i++)
-        {
-            Mouse.move(0, -10);
-            delay(20);
-        }
-    }
-
-    // 键盘操作
-    else if (command == "down")
-    {
-        Keyboard.press(KEY_RIGHT_ARROW);
-        delay(100);
-        Keyboard.release(KEY_RIGHT_ARROW);
-    }
-    else if (command == "right")
-    {
-        Keyboard.press(KEY_RIGHT_ARROW);
-        delay(100);
-        Keyboard.release(KEY_RIGHT_ARROW);
-    }
-    
-    else if (command == "menu")
-    {
-        Keyboard.press(KEY_LEFT_GUI);
-        delay(100);
-        Keyboard.release(KEY_LEFT_GUI);
-    }
-
-    else if (command == "ding")
+    if (command == "clockIn")
     {
         
-        // 复位
-        mouseMoveSmooth(-600,-1000);
-        delay(300);
-        // 移动到中心
-        mouseMoveSmooth(180,650);
-        delay(1000);
-        Mouse.click(MOUSE_LEFT);
-        
-    }
-    else if (command == "back")
+    }else if (command == "unlock")
     {
-
-        Keyboard.press(KEY_BACKSPACE);   // 按下 Backspace 键
-        delay(150);                      // 保持一小段时间
-        Keyboard.release(KEY_BACKSPACE); // 松开 Backspace 键
-        
+        unlockScreen();
+        sendLog("unlock","success","屏幕已解锁");
     }
-
-    else if (command == "rmtask")
+    else if (command == "altTab")
     {
-        Keyboard.press(KEY_LEFT_ALT);   // 按下 GUI/Meta 键
-        Keyboard.press(KEY_TAB);        // 按下 Tab 键
-        delay(150);                      // 保持一小段时间
-        Keyboard.release(KEY_TAB);      // 松开 Tab 键
-        Keyboard.release(KEY_LEFT_ALT); // 松开 GUI 键
+        pressAltTab();
     }
-    else if (command == "tab")
+    else if (command == "upArrow")
     {
-        Keyboard.press(KEY_TAB);   // 按下 GUI/Meta 键
-        delay(150);                      // 保持一小段时间
-        Keyboard.release(KEY_TAB);      // 松开 Tab 键
+        pressUpArrow();
     }
-    else if (command == "esc")
+    else if (command == "downArrow")
     {
-        Keyboard.press(KEY_ESC);   // 按下 GUI/Meta 键
-        delay(150);                      // 保持一小段时间
-        Keyboard.release(KEY_ESC);      // 松开 Tab 键
+        pressDownArrow();
+    }
+    else if (command == "leftArrow")
+    {
+        pressLeftArrow();
+    }
+    else if (command == "rightArrow")
+    {
+        pressRightArrow();
     }
     else if (command == "enter")
     {
-        Keyboard.press(KEY_RETURN);   // 按下 GUI/Meta 键
-        delay(150);                      // 保持一小段时间
-        Keyboard.release(KEY_RETURN);      // 松开 Tab 键
+        pressEnter();
     }
-    // 未知命令
+    else if (command == "esc")
+    {
+        pressEsc();
+    }
+    else if (command == "backspace")
+    {
+        pressBackspace();
+    }
+    else if (command == "tab")
+    {
+        pressTab();
+    }
+    else if (command == "clickMouse")
+    {
+        clickMouse();
+    }
+    else if (command == "startMenu")
+    {
+        openStartMenu();
+    }
+    else if (command == "minimizeWindow")
+    {
+        minimizeCurrentWindow();
+    }
     else
     {
         Serial.println("未知命令: " + command);
+        sendLog(command,"fail", "未知命令");
     }
 }

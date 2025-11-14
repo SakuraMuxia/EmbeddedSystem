@@ -76,6 +76,16 @@ String generateDeviceId()
 }
 
 String deviceId = generateDeviceId();
+
+// 发送日志函数
+void sendLog(const String &command,const String &result,const String &message)
+{
+    if (ws.available())
+    {
+        ws.send("{\"type\":\"log\",\"deviceId\":\"" + deviceId + "\",\"action\":\"" + command + "\",\"result\":\"" + result + "\",\"message\":\"" + message + "\"}");
+    }
+}
+
 // ======== LED 控制函数 ========
 void updateLed()
 {

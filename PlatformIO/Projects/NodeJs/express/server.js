@@ -37,6 +37,17 @@ function broadcastToClients(message) {
     }
   }
 }
+// 封装响应数据类型
+function buildDeviceMessage(type, deviceId, action, result = "success", msg="") {
+  return JSON.stringify({
+    type,
+    deviceId,
+    ts: Date.now(),
+    action,      // 执行动作
+    result,      // success / fail
+    msg         // 扩展字段
+  });
+}
 
 // WebSocket 连接处理
 wss.on("connection", (ws, req) => {
@@ -62,7 +73,7 @@ wss.on("connection", (ws, req) => {
         console.warn("Invalid JSON from ESP:", raw.toString());
         return;
       }
-
+      // 当收到ESP32的注册消息时
       if (msg.type === "register" && msg.deviceId) {
         ws._registeredId = msg.deviceId;
 
@@ -81,23 +92,19 @@ wss.on("connection", (ws, req) => {
         console.log(`✅ ESP32上线: ${msg.deviceId}`);
 
         broadcastToClients(
-          JSON.stringify({
-            type: "device",
-            event: "online",
-            deviceId: msg.deviceId,
-            ts: Date.now(),
-          })
+          buildDeviceMessage("device", msg.deviceId, "online")
         );
         return;
       }
-
+      // 当收到ESP32的日志消息时
       if (
         msg.type === "log" ||
         msg.type === "result" ||
         msg.type === "status"
       ) {
-        broadcastToClients(JSON.stringify({ ...msg, ts: Date.now() }));
-        console.log("ESP32数据:", JSON.stringify(msg));
+
+
+        broadcastToClients(buildDeviceMessage(msg.type, msg.deviceId, msg.action || "", msg.result || "success", msg.message || ""));
       }
     });
 
@@ -105,12 +112,7 @@ wss.on("connection", (ws, req) => {
       if (ws._registeredId) {
         espMap.delete(ws._registeredId);
         broadcastToClients(
-          JSON.stringify({
-            type: "device",
-            event: "offline",
-            deviceId: ws._registeredId,
-            ts: Date.now(),
-          })
+          buildDeviceMessage("device", ws._registeredId, "offline")
         );
         console.log(`ESP32断开: ${ws._registeredId}`);
       }
@@ -182,15 +184,9 @@ app.post("/api/operphone", (req, res) => {
   try {
     // 发送命令给 ESP32
     espWs.send(payload);
-    // 广播
+    // 广播给客户端
     broadcastToClients(
-      JSON.stringify({
-        type: "server",
-        event: "sentCmd",
-        deviceId,
-        action: cmd,
-        ts: Date.now(),
-      })
+      buildDeviceMessage("server", deviceId, cmd)
     );
     // 返回响应
     res.json({ success: true, message: "命令已发送" });
@@ -220,12 +216,7 @@ const interval = setInterval(() => {
         espMap.delete(socket._registeredId);
 
         broadcastToClients(
-          JSON.stringify({
-            type: "device",
-            event: "offline",
-            deviceId: socket._registeredId,
-            ts: Date.now(),
-          })
+          buildDeviceMessage("server", socket._registeredId, "cleanDisconnect")
         );
       }
 

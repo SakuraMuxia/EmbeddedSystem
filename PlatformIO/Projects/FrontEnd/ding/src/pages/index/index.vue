@@ -1,6 +1,6 @@
 <template>
 	<view class="content">
-		<button @click="handleOpenScreen('click')" class="btn">亮屏</button>
+		<button @click="handleOpenScreen('unlock')" class="btn">解锁</button>
 		<button @click="handleOpenScreen('esc')" class="btn">取消</button>
 		<button @click="handleOpenScreen('enter')" class="btn">确认</button>
 		<button @click="handleOpenScreen('rmtask')" class="btn">任务</button>
@@ -26,7 +26,7 @@ const handleOpenScreen = async (oper:String) => {
 		deviceId:"esp32-0000_B853_70A5_0528"
 	};
 	await indexReq
-		.reqBrightScreen(body)
+		.postCommand(body)
 		.then((res:any) => {
 			console.log(res)
 		})
