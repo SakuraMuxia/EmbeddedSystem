@@ -22,6 +22,7 @@
 		<view class="log-container">
 			<uni-table ref="logTableRef" border stripe type="selection" emptyText="暂无更多数据">
 				<uni-tr>
+					<uni-th align="center">类型</uni-th>
 					<uni-th align="center">ID</uni-th>
 					<uni-th align="center">动作</uni-th>
 					<uni-th align="center">结果</uni-th>
@@ -29,6 +30,7 @@
 					<uni-th>时间</uni-th>
 				</uni-tr>
 				<uni-tr v-for="(item, index) in logTableData" :key="index">
+					<uni-td>{{ item.type }}</uni-td>
 					<uni-td>{{ item.deviceId }}</uni-td>
 					<uni-td>
 						<view class="name">{{ item.action }}</view>

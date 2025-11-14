@@ -249,7 +249,7 @@ void setupWebSocketCallbacks()
         break;
 
       case WebsocketsEvent::GotPing:
-        ws.pong();
+        // ws.pong(); 默认会自动回复 Pong 
         Serial.println("📡 收到服务器 Ping → 已回复 Pong");
         lastPongTime = millis();
         break;

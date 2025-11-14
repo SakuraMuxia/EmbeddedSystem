@@ -22,8 +22,8 @@ const espMap = new Map(); // deviceId -> ws
 const clientMap = new Map(); // clientId -> ws
 
 // 心跳参数
-const HEARTBEAT_INTERVAL = 1000; // 30s
-const PONG_TIMEOUT = 3000; // 60s
+const HEARTBEAT_INTERVAL = 3000; // 30s
+const PONG_TIMEOUT = 6000; // 60s
 
 // 广播消息给所有浏览器客户端
 function broadcastToClients(message) {
@@ -48,7 +48,17 @@ function buildDeviceMessage(type, deviceId, action, result = "success", msg="") 
     msg         // 扩展字段
   });
 }
-
+// 格式化时间戳
+function formatTimestamp(ts) {
+  const date = new Date(ts);
+  const Y = date.getFullYear();
+  const M = String(date.getMonth() + 1).padStart(2, '0');
+  const D = String(date.getDate()).padStart(2, '0');
+  const h = String(date.getHours()).padStart(2, '0');
+  const m = String(date.getMinutes()).padStart(2, '0');
+  const s = String(date.getSeconds()).padStart(2, '0');
+  return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+}
 // WebSocket 连接处理
 wss.on("connection", (ws, req) => {
   ws.isAlive = true;
@@ -57,7 +67,8 @@ wss.on("connection", (ws, req) => {
   ws.on("pong", () => {
     ws.isAlive = true;
     ws.lastPong = Date.now();
-    console.log(`✅ 收到 ${ws._registeredId || ws._clientId || "未注册"} 的 pong`);
+    const formattedTime = formatTimestamp(ws.lastPong);
+    console.log(`${formattedTime}✅ 收到 ${ws._registeredId || ws._clientId || "未注册"} 的 pong`);
   });
 
   const url = req.url || "";
@@ -102,9 +113,7 @@ wss.on("connection", (ws, req) => {
         msg.type === "result" ||
         msg.type === "status"
       ) {
-
-
-        broadcastToClients(buildDeviceMessage(msg.type, msg.deviceId, msg.action || "", msg.result || "success", msg.message || ""));
+        broadcastToClients(buildDeviceMessage("device", msg.deviceId, msg.action || "", msg.result || "success", msg.message || ""));
       }
     });
 
