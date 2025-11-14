@@ -18,6 +18,12 @@
 			"style": {
 				"navigationBarTitleText": "log"
 			}
+		},
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登陆"
+			}
 		}
 	],
 	"globalStyle": {

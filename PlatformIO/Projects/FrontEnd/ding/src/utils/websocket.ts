@@ -100,7 +100,7 @@ class WebSocketManager {
     const payload = typeof data === 'string' ? data : JSON.stringify(data);
     uni.sendSocketMessage({
       data: payload,
-      success: () => console.log('[WS] 消息发送成功', payload),
+      success: () => console.log('[WS] 消息发送成功'),
       fail: (err) => console.error('[WS] 消息发送失败', err),
     });
   }

@@ -59,8 +59,9 @@ const formData = ref({
 });
 // 注册函数
 const registClient = () => {
+	const token = uni.getStorageSync('token')
 	if (ws.socketOpen) {
-		ws.send({ type: 'register', clientId: 'browser_001' });
+		ws.send({ type: 'register', clientId: 'browser_001',token:token });
 	} else {
 		setTimeout(registClient, 500);
 	}

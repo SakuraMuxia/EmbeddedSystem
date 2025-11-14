@@ -7,13 +7,13 @@ export const requestInterceptor = () => {
 	uni.addInterceptor('request', {
 		invoke(args) {
 			// 请求前的处理，如添加 token
-			// const token = uni.getStorageSync('TOKEN');
-			// if (token) {
-			// 	args.header = {
-			// 		...args.header,
-			// 		Authorization: `Bearer ${token}`,
-			// 	};
-			// }
+			const token = uni.getStorageSync('token');
+			if (token) {
+				args.header = {
+					...args.header,
+					Authorization: `Bearer ${token}`,
+				};
+			}
 			console.log("请求拦截:",args)
 			return args;
 		},

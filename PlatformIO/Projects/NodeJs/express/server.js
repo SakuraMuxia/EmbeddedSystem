@@ -25,6 +25,14 @@ const clientMap = new Map(); // clientId -> ws
 const HEARTBEAT_INTERVAL = 3000; // 30s
 const PONG_TIMEOUT = 6000; // 60s
 
+// 简单 token 生成（真实情况你可以改成 JWT）
+function generateToken() {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+// 内存 token 存储：token -> clientId
+const tokenMap = new Map();
+
 // 广播消息给所有浏览器客户端
 function broadcastToClients(message) {
   for (const ws of clientMap.values()) {
@@ -38,37 +46,47 @@ function broadcastToClients(message) {
   }
 }
 // 封装响应数据类型
-function buildDeviceMessage(type, deviceId, action, result = "success", msg="") {
+function buildDeviceMessage(
+  type,
+  deviceId,
+  action,
+  result = "success",
+  msg = ""
+) {
   return JSON.stringify({
     type,
     deviceId,
     ts: Date.now(),
-    action,      // 执行动作
-    result,      // success / fail
-    msg         // 扩展字段
+    action, // 执行动作
+    result, // success / fail
+    msg, // 扩展字段
   });
 }
 // 格式化时间戳
 function formatTimestamp(ts) {
   const date = new Date(ts);
   const Y = date.getFullYear();
-  const M = String(date.getMonth() + 1).padStart(2, '0');
-  const D = String(date.getDate()).padStart(2, '0');
-  const h = String(date.getHours()).padStart(2, '0');
-  const m = String(date.getMinutes()).padStart(2, '0');
-  const s = String(date.getSeconds()).padStart(2, '0');
+  const M = String(date.getMonth() + 1).padStart(2, "0");
+  const D = String(date.getDate()).padStart(2, "0");
+  const h = String(date.getHours()).padStart(2, "0");
+  const m = String(date.getMinutes()).padStart(2, "0");
+  const s = String(date.getSeconds()).padStart(2, "0");
   return `${Y}-${M}-${D} ${h}:${m}:${s}`;
 }
 // WebSocket 连接处理
 wss.on("connection", (ws, req) => {
   ws.isAlive = true;
   ws.lastPong = Date.now();
-  
+
   ws.on("pong", () => {
     ws.isAlive = true;
     ws.lastPong = Date.now();
     const formattedTime = formatTimestamp(ws.lastPong);
-    console.log(`${formattedTime}✅ 收到 ${ws._registeredId || ws._clientId || "未注册"} 的 pong`);
+    console.log(
+      `${formattedTime}✅ 收到 ${
+        ws._registeredId || ws._clientId || "未注册"
+      } 的 pong`
+    );
   });
 
   const url = req.url || "";
@@ -113,7 +131,15 @@ wss.on("connection", (ws, req) => {
         msg.type === "result" ||
         msg.type === "status"
       ) {
-        broadcastToClients(buildDeviceMessage("device", msg.deviceId, msg.action || "", msg.result || "success", msg.message || ""));
+        broadcastToClients(
+          buildDeviceMessage(
+            "device",
+            msg.deviceId,
+            msg.action || "",
+            msg.result || "success",
+            msg.message || ""
+          )
+        );
       }
     });
 
@@ -130,11 +156,18 @@ wss.on("connection", (ws, req) => {
     ws.on("error", (err) => console.warn("ESP32错误:", err.message || err));
   } else if (url === "/client") {
     ws._clientId = null;
+    ws._token = null;
     ws.on("message", (raw) => {
       try {
         const msg = JSON.parse(raw.toString());
         if (msg.type === "register" && msg.clientId) {
           const clientId = msg.clientId;
+          const { token } = msg;
+          if (!token || !tokenMap.has(token)) {
+            console.log("❌ 非法 token，连接关闭");
+            ws.close();
+            return;
+          }
 
           if (clientMap.has(clientId)) {
             const oldWs = clientMap.get(clientId);
@@ -168,9 +201,34 @@ wss.on("connection", (ws, req) => {
   }
 });
 
+// 验证 token 中间件
+function requireToken(req, res) {
+  const auth = req.headers.authorization;
+  const token = auth?.replace("Bearer ", "");
+
+  if (!token) {
+    res.status(401).json({ success: false, message: "缺少 token" });
+    return null; // 返回 null 代表不通过
+  }
+
+  if (!tokenMap.has(token)) {
+    res.status(401).json({ success: false, message: "token 无效或已过期" });
+    return null;
+  }
+
+  return token; // 返回有效 token
+}
+
 // --- HTTP API ---
 // HTTP API
 app.post("/api/operphone", (req, res) => {
+  // 验证 token
+  const token = requireToken(req, res);
+  if (!token){
+    return res
+      .status(400)
+      .json({ success: false, message: "token 无效或已过期" })
+  }
   const { deviceId, cmd, meta } = req.body || {};
   if (!deviceId || !cmd)
     return res
@@ -194,9 +252,7 @@ app.post("/api/operphone", (req, res) => {
     // 发送命令给 ESP32
     espWs.send(payload);
     // 广播给客户端
-    broadcastToClients(
-      buildDeviceMessage("server", deviceId, cmd)
-    );
+    broadcastToClients(buildDeviceMessage("server", deviceId, cmd));
     // 返回响应
     res.json({ success: true, message: "命令已发送" });
   } catch (e) {
@@ -206,10 +262,66 @@ app.post("/api/operphone", (req, res) => {
 });
 
 app.get("/api/esp-status", (req, res) => {
+  // 验证 token
+  const token = requireToken(req, res);
+  if (!token){
+    return res
+      .status(400)
+      .json({ success: false, message: "token 无效或已过期" })
+  }
   const list = [];
   for (const [deviceId, ws] of espMap.entries())
     list.push({ deviceId, alive: ws.isAlive, readyState: ws.readyState });
   res.json({ count: list.length, devices: list });
+});
+
+// 浏览器登录接口
+app.post("/api/login", (req, res) => {
+  const { username, password } = req.body || {};
+
+  // 简单账号密码校验
+  if (username !== "admin" || password !== "123456") {
+    return res.status(401).json({ success: false, message: "账号或密码错误" });
+  }
+
+  const token = generateToken();
+  tokenMap.set(token, username); // token 绑定 clientId（这里用 username）
+
+  res.json({
+    success: true,
+    token,
+    clientId: username,
+    message: "登录成功",
+  });
+});
+
+// 退出登录
+app.post("/api/logout", (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.replace("Bearer ", "");
+
+  if (!token) {
+    return res.status(400).json({
+      success: false,
+      message: "缺少 token",
+    });
+  }
+
+  // 判断 token 是否有效
+  if (!tokenMap.has(token)) {
+    return res.status(401).json({
+      success: false,
+      message: "token 无效或已退出",
+    });
+  }
+
+  // 删除 token
+  tokenMap.delete(token);
+
+  res.json({
+    success: true,
+    message: "退出成功",
+  });
 });
 
 // 心跳检测 (只用 isAlive + lastPong)

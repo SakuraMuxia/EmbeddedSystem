@@ -13,6 +13,18 @@ class Request extends Service{
 			url:'/api/esp-status'
 		})
 	}
+	postLogin(body:any){
+		return this.post({
+			url:'/api/login',
+			data:body
+		})
+	}
+	postLogout(body:any){
+		return this.post({
+			url:'/api/logout',
+			data:body
+		})
+	}
 }
 
 export default new Request;

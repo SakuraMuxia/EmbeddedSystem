@@ -10,6 +10,7 @@
 		<button @click="handleOpenScreen('menu')" class="btn">菜单</button>
 		<button @click="handleOpenScreen('ding')" class="btn">相机</button>
 		<button @click="handleOpenScreen('back')" class="btn">返回</button>
+		<button @click="logout()" class="btn">退出登陆</button>
 	</view>
 </template>
 
@@ -36,6 +37,24 @@ const handleOpenScreen = async (oper:String) => {
 			// 消息提示
 		});
 };
+
+const logout = async() => {
+	await indexReq.postLogout().then((res:any)=>{
+		if(res.success == true){
+			uni.setStorageSync('token', '');
+			uni.showToast({ title: '退出成功', icon: 'success' });
+			// 跳转页面
+			uni.reLaunch({
+				url: '/pages/login/login' // 登录成功后跳转首页
+			});
+		}else{
+			uni.showToast({ title: '退出失败', icon: 'fail' });
+		}
+		
+	}).catch(()=>{
+		console.log()
+	})
+}
 </script>
 
 <style lang="scss">
