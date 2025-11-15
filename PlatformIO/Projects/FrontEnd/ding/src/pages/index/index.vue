@@ -11,6 +11,7 @@
 		<button @click="handleOpenScreen('tab')" class="btn">tab</button>
 		<button @click="handleOpenScreen('menu')" class="btn">菜单</button>
 		<button @click="handleOpenScreen('minimizeWindow')" class="btn">返回</button>
+		<button @click="disConnect()" class="btn">断开链接</button>
 		<button @click="logout()" class="btn">退出登陆</button>
 	</view>
 </template>
@@ -32,12 +33,22 @@ const handleOpenScreen = async (oper:String) => {
 		.then((res:any) => {
 			console.log(res)
 			// 消息提示
+			uni.showToast({ title: '发送指令成功', icon: 'success' });
 		})
 		.catch((err:any) => {
 			console.log(err)
 			// 消息提示
+			uni.showToast({ title: `发送指令失败:${err}`, icon: 'fail' });
 		});
 };
+
+const disConnect = async() => {
+	await indexReq.getDisconnect("esp32-0000_B853_70A5_0528").then((res:any)=>{
+		console.log(res)
+	}).catch((err:any)=>{
+		console.log(err)
+	})
+}
 
 const logout = async() => {
 	await indexReq.postLogout().then((res:any)=>{
@@ -52,8 +63,10 @@ const logout = async() => {
 			uni.showToast({ title: '退出失败', icon: 'fail' });
 		}
 		
-	}).catch(()=>{
+	}).catch((err)=>{
 		console.log()
+		
+		uni.showToast({ title: `发送指令失败:${err}`, icon: 'fail' });
 	})
 }
 </script>

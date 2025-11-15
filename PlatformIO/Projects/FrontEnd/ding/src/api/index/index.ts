@@ -25,6 +25,11 @@ class Request extends Service{
 			data:body
 		})
 	}
+	getDisconnect(id:any){
+		return this.get({
+			url:`/api/disconnect/${id}`
+		})
+	}
 }
 
 export default new Request;

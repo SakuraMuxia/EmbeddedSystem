@@ -84,6 +84,8 @@ ws.onMessage((data) => {
 	logTableData.value.unshift(msg);
 });
 
+ws.on
+
 // 格式化时间戳
 const formatTs = (ts) => {
 	const date = new Date(ts);
@@ -102,9 +104,12 @@ const getAliveEspConnect = () => {
 		.then((res) => {
 			tableData.value = res.devices;
 			toggle('right');
+			
 		})
 		.catch((e) => {
 			console.log(e);
+			// 提示消息
+			uni.showToast({ title: `发送指令失败:${e}`, icon: 'fail' });
 		});
 };
 

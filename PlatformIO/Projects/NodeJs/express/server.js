@@ -20,18 +20,18 @@ const PORT = process.env.PORT || 3000;
 
 const espMap = new Map(); // deviceId -> ws
 const clientMap = new Map(); // clientId -> ws
-
+// 内存 token 存储：token -> clientId
+const tokenMap = new Map();
 // 心跳参数
-const HEARTBEAT_INTERVAL = 3000; // 30s
-const PONG_TIMEOUT = 6000; // 60s
+const HEARTBEAT_INTERVAL = 20000; // 10s
+const PONG_TIMEOUT = 40000; // 20s
 
 // 简单 token 生成（真实情况你可以改成 JWT）
 function generateToken() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
-// 内存 token 存储：token -> clientId
-const tokenMap = new Map();
+
 
 // 广播消息给所有浏览器客户端
 function broadcastToClients(message) {
@@ -162,13 +162,7 @@ wss.on("connection", (ws, req) => {
         const msg = JSON.parse(raw.toString());
         if (msg.type === "register" && msg.clientId) {
           const clientId = msg.clientId;
-          const { token } = msg;
-          if (!token || !tokenMap.has(token)) {
-            console.log("❌ 非法 token，连接关闭");
-            ws.close();
-            return;
-          }
-
+          
           if (clientMap.has(clientId)) {
             const oldWs = clientMap.get(clientId);
             console.log(`断开旧浏览器连接: ${clientId}`);
@@ -229,6 +223,10 @@ app.post("/api/operphone", (req, res) => {
       .status(400)
       .json({ success: false, message: "token 无效或已过期" })
   }
+  if (!tokenMap.has(token)) {
+    res.status(401).json({ success: false, message: "token 无效或已过期" });
+    return null;
+  }
   const { deviceId, cmd, meta } = req.body || {};
   if (!deviceId || !cmd)
     return res
@@ -261,6 +259,36 @@ app.post("/api/operphone", (req, res) => {
   }
 });
 
+app.get('/api/disconnect/:id', (req, res) => {
+    // 获取path中的参数
+    const deviceId = req.params.id;
+    // 获取 query 中的参数
+    // console.log(req.query.id);
+    console.log(`请求断开设备: ${deviceId}`);
+    if (!espMap.has(deviceId)) {
+        return res.json({
+            success: false,
+            message: `设备 ${deviceId} 不存在或未连接`
+        });
+    }
+
+    const ws = espMap.get(deviceId);
+
+    // 从 Map 删除
+    espMap.delete(deviceId);
+
+    // 关闭 WebSocket 连接
+    try {
+        ws.close(1000, "Server requested disconnect");
+    } catch (e) {
+        console.error("关闭 WebSocket 失败:", e);
+    }
+
+    return res.json({
+        success: true,
+        message: `设备 ${deviceId} 已断开连接`
+    });
+});
 app.get("/api/esp-status", (req, res) => {
   // 验证 token
   const token = requireToken(req, res);
@@ -268,6 +296,10 @@ app.get("/api/esp-status", (req, res) => {
     return res
       .status(400)
       .json({ success: false, message: "token 无效或已过期" })
+  }
+  if (!tokenMap.has(token)) {
+    res.status(401).json({ success: false, message: "token 无效或已过期" });
+    return null;
   }
   const list = [];
   for (const [deviceId, ws] of espMap.entries())

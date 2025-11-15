@@ -157,7 +157,7 @@ void clickDing()
     mouseMoveSmooth(-600, -1000);
     delay(500);
     // 移动到中心
-    mouseMoveSmooth(180, 630);
+    mouseMoveSmooth(180, 610);
     delay(1000);
     Mouse.click(MOUSE_LEFT);
 }

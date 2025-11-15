@@ -20,13 +20,13 @@ export const requestInterceptor = () => {
 		success(response) {
 			// 响应后的处理，如统一处理错误码
 			console.log("响应拦截:",response)
-			if (response.data.code === 401) {
-				// uni.showToast({
-				// 	title: '登录已过期，请重新登录',
-				// 	icon: 'none',
-				// });
-				// // 可以跳转到登录页面
-				// uni.redirectTo({ url: '/pages/login/login' });
+			if (response.statusCode === 401) {
+				uni.showToast({
+					title: '登录已过期，请重新登录',
+					icon: 'none',
+				});
+				// 可以跳转到登录页面
+				uni.redirectTo({ url: '/pages/login/login' });
 				// 自动重新登陆
 				// if(userInfoStore.username && userInfoStore.passwd){
 				// 	userInfoStore.silentLogin()
