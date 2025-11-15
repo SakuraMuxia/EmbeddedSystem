@@ -62,17 +62,23 @@ void setupWatchdog()
 // ======== 生成唯一设备 ID ========
 String generateDeviceId()
 {
-  uint64_t mac = ESP.getEfuseMac(); // ESP32 唯一 MAC
+    uint64_t mac = ESP.getEfuseMac(); // 48-bit MAC
 
-  char buf[32];
-  // 拆分 MAC 为 4 个块，每块 4 位 HEX
-  sprintf(buf, "esp32-%04lX_%04lX_%04lX_%04lX",
-          (uint16_t)(mac >> 48), // 高16位
-          (uint16_t)(mac >> 32), // 次高16位
-          (uint16_t)(mac >> 16), // 次低16位
-          (uint16_t)(mac));      // 低16位
+    uint8_t macBytes[6];
+    macBytes[0] = (mac >> 40) & 0xFF;
+    macBytes[1] = (mac >> 32) & 0xFF;
+    macBytes[2] = (mac >> 24) & 0xFF;
+    macBytes[3] = (mac >> 16) & 0xFF;
+    macBytes[4] = (mac >> 8) & 0xFF;
+    macBytes[5] = mac & 0xFF;
 
-  return String(buf);
+    char buf[32];
+    sprintf(buf, "esp32-%02X%02X_%02X%02X_%02X%02X",
+        macBytes[5], macBytes[4],
+        macBytes[3], macBytes[2],
+        macBytes[1], macBytes[0]);
+
+    return String(buf);
 }
 
 String deviceId = generateDeviceId();

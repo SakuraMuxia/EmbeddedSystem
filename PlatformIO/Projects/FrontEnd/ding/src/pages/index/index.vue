@@ -11,7 +11,7 @@
 		<button @click="handleOpenScreen('tab')" class="btn">tab</button>
 		<button @click="handleOpenScreen('menu')" class="btn">菜单</button>
 		<button @click="handleOpenScreen('minimizeWindow')" class="btn">返回</button>
-		<button @click="disConnect()" class="btn">断开链接</button>
+		<button @click="disConnect('esp32-2805_A570_53B8')" class="btn">断开链接</button>
 		<button @click="logout()" class="btn">退出登陆</button>
 	</view>
 </template>
@@ -42,11 +42,12 @@ const handleOpenScreen = async (oper:String) => {
 		});
 };
 
-const disConnect = async() => {
-	await indexReq.getDisconnect("esp32-0000_B853_70A5_0528").then((res:any)=>{
+const disConnect = async(id:any) => {
+	await indexReq.getDisconnect(id).then((res:any)=>{
 		console.log(res)
+		uni.showToast({ title: '已断开ESP32的链接', icon: 'success' });
 	}).catch((err:any)=>{
-		console.log(err)
+		uni.showToast({ title: '断开ESP32链接失败', icon: 'fail' });
 	})
 }
 
