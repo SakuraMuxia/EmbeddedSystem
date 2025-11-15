@@ -196,17 +196,17 @@ void handleCommand(const String &command)
         clickDing();
         delay(5000);
 
-        // 返回手机桌面
-        // 按 8 下 Tab 键
-        for (int i = 0; i < 6; i++){
+        // // 返回手机桌面
+        // // 按 3 下 Tab 键
+        for (int i = 0; i < 3; i++){
             pressTab();
             delay(200);
         }
         delay(200);
-        // 按 Enter 键
+        // // 按 Enter 键
         pressEnter();
         delay(200);
-        pressEsc();
+        // pressEsc();
         delay(400);
         press2Esc();
         sendLog("clockIn","success","已完成打卡操作");
