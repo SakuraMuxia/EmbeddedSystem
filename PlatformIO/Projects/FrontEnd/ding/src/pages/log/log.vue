@@ -61,7 +61,7 @@ const formData = ref({
 const registClient = () => {
 	const token = uni.getStorageSync('token')
 	if (ws.socketOpen) {
-		ws.send({ type: 'register', clientId: 'browser_001',token:token });
+		ws.send({ type: 'register', clientId: token});
 	} else {
 		setTimeout(registClient, 500);
 	}
@@ -83,8 +83,6 @@ ws.onMessage((data) => {
 	console.log('msg', msg);
 	logTableData.value.unshift(msg);
 });
-
-ws.on
 
 // 格式化时间戳
 const formatTs = (ts) => {
@@ -123,9 +121,18 @@ const toggle = (type: String) => {
 const change = (e) => {
 	// console.log('当前模式：' + e.type + ',状态：' + e.show);
 };
+
+const disconnectWs = () => {
+	ws.close();
+	ws = null;
+}
+
 onMounted(() => {
 	registClient();
 });
+onBeforeUnmount(()=>{
+	disconnectWs()
+})
 </script>
 <style scoped lang="scss">
 .container {

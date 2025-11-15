@@ -172,6 +172,9 @@ wss.on("connection", (ws, req) => {
           clientMap.set(clientId, ws);
           ws._clientId = clientId;
           console.log(`🌐 浏览器客户端上线: ${clientId}`);
+          broadcastToClients(
+            buildDeviceMessage("client", msg.clientId, "online")
+          );
         }
       } catch (e) {
         console.log("非 JSON 消息:", raw.toString());
@@ -182,6 +185,9 @@ wss.on("connection", (ws, req) => {
       if (ws._clientId) {
         clientMap.delete(ws._clientId);
         console.log(`浏览器客户端断开: ${ws._clientId}`);
+        broadcastToClients(
+            buildDeviceMessage("client", ws._clientId, "offline")
+          );
       }
     });
 

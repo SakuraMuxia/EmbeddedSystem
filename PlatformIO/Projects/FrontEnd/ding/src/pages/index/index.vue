@@ -26,28 +26,39 @@ const handleOpenScreen = async (oper:String) => {
 	
 	const body = {
 		cmd:oper,
-		deviceId:"esp32-0000_B853_70A5_0528"
+		deviceId:"esp32-2805_A570_53B8"
 	};
 	await indexReq
 		.postCommand(body)
 		.then((res:any) => {
 			console.log(res)
-			// 消息提示
-			uni.showToast({ title: '发送指令成功', icon: 'success' });
+			// 没有拦截状态
+			if(res.success == true){
+				// 消息提示
+				uni.showToast({ title: '发送指令成功', icon: 'success' });
+			}else{
+				uni.showToast({ title: `发送指令失败${res.message}`, icon: 'fail' });
+			}
+			
 		})
 		.catch((err:any) => {
 			console.log(err)
 			// 消息提示
-			uni.showToast({ title: `发送指令失败:${err}`, icon: 'fail' });
+			uni.showToast({ title: `网络错误`, icon: 'fail' });
 		});
 };
 
 const disConnect = async(id:any) => {
 	await indexReq.getDisconnect(id).then((res:any)=>{
-		console.log(res)
-		uni.showToast({ title: '已断开ESP32的链接', icon: 'success' });
+		// 没有拦截状态
+		if(res.success == true){
+			// 消息提示
+			uni.showToast({ title: '发送指令成功', icon: 'success' });
+		}else{
+			uni.showToast({ title: `发送指令失败${res.message}`, icon: 'fail' });
+		}
 	}).catch((err:any)=>{
-		uni.showToast({ title: '断开ESP32链接失败', icon: 'fail' });
+		uni.showToast({ title: '网络错误', icon: 'fail' });
 	})
 }
 
