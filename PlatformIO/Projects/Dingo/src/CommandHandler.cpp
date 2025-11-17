@@ -193,12 +193,12 @@ void handleCommand(const String &command)
 
         delay(4000);
         // 点击打卡按钮
-        clickDing();
-        delay(5000);
+        // clickDing();
+        delay(3000);
 
         // // 返回手机桌面
         // // 按 3 下 Tab 键
-        for (int i = 0; i < 3; i++){
+        for (int i = 0; i < 7; i++){
             pressTab();
             delay(200);
         }
