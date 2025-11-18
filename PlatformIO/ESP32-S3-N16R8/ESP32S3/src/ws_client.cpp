@@ -5,7 +5,7 @@
 WebSocketsClient webSocket;
 bool streaming = false;
 // Node.js WebSocket 服务地址
-const char* NODE_WS_HOST = "192.168.2.250"; // 修改为你的 Node IP
+const char* NODE_WS_HOST = "39.106.41.164"; // 修改为你的 Node IP
 const uint16_t NODE_WS_PORT = 9001;
 
 

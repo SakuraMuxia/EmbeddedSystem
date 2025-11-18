@@ -1,9 +1,20 @@
 const express = require("express");
+const cors = require("cors");
+const WebSocket = require("ws");
+const http = require("http");
 const app = express();
 app.use(express.json());
 
-const WebSocket = require("ws");
-const http = require("http");
+
+
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+app.options("*", (req, res) => res.sendStatus(200));
 
 // ================= 配置 =================
 const WS_PORT = 9001;
@@ -143,6 +154,8 @@ setInterval(() => {
 const server = http.createServer(app); // 把 Express 绑定到 HTTP Server
 const wss = new WebSocket.Server({ noServer: true });
 
+
+
 server.on("upgrade", (request, socket, head) => {
   const url = request.url;
 
@@ -159,7 +172,7 @@ server.on("upgrade", (request, socket, head) => {
   }
 });
 
-app.post("/stream/:action", (req, res) => {
+app.post("api/stream/:action", (req, res) => {
   const action = req.params.action.toUpperCase();
   if (esp32Clients.size === 0) return res.status(500).json({ error: "No ESP32 connected" });
 

@@ -14,13 +14,15 @@
 		<button @click="disConnect('esp32-2805_A570_53B8')" class="btn">断开链接</button>
 		<button @click="jumpToRealTime" class="btn">跳转实时</button>
 		<button @click="logout()" class="btn">退出登陆</button>
+		<button @click="startStream()" class="btn">开启推流</button>
+		<button @click="stopStream()" class="btn">关闭推流</button>
 	</view>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import indexReq from '@/api/index';
-
+import req from '@/api/index/my';
 const title = ref('Hello');
 
 const handleOpenScreen = async (oper:String) => {
@@ -87,6 +89,40 @@ const logout = async() => {
 		
 		uni.showToast({ title: `发送指令失败:${err}`, icon: 'fail' });
 	})
+}
+
+const startStream = () => {
+	req.postCommand('START').then((res)=>{
+		if(res.success == true){
+			
+			uni.showToast({ title: '开启成功', icon: 'success' });
+			// 跳转页面
+			uni.reLaunch({
+				url: '/pages/my/my' // 登录成功后跳转首页
+			});
+		}else{
+			uni.showToast({ title: '开启失败', icon: 'success' });
+		}
+	}).catch(()=>{
+		
+	});
+}
+
+const stopStream = () => {
+	req.postCommand('STOP').then((res)=>{
+		if(res.success == true){
+			
+			uni.showToast({ title: '关闭成功', icon: 'success' });
+			// 跳转页面
+			uni.reLaunch({
+				url: '/pages/my/my' // 登录成功后跳转首页
+			});
+		}else{
+			uni.showToast({ title: '关闭失败', icon: 'success' });
+		}
+	}).catch(()=>{
+		
+	});
 }
 </script>
 

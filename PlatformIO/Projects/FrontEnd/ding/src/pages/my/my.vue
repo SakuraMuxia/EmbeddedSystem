@@ -7,6 +7,8 @@
 <script setup>
 import {ref, onMounted, onBeforeUnmount } from 'vue';
 import WebSocketManager from '@/utils/websocket';
+import req from '@/api/index/my';
+
 var wsInstance;
 // Canvas 宽高
 const imgSrc = ref('')
@@ -14,7 +16,7 @@ const cameraImgRef = ref()
 const getWebSocketInstance = () => {
 	if (true) {
 		wsInstance = new WebSocketManager({
-			url: `ws://192.168.2.250:9001/client`,
+			url: `ws://39.106.41.164:9001/client`,
 			heartbeatInterval: 30000,
 			reconnectInterval: 10000,
 			maxReconnectAttempts: 5
