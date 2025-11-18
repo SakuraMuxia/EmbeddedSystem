@@ -24,6 +24,12 @@
 			"style": {
 				"navigationBarTitleText": "登陆"
 			}
+		},
+		{
+			"path": "pages/my/my",
+			"style": {
+				"navigationBarTitleText": "我的"
+			}
 		}
 	],
 	"globalStyle": {

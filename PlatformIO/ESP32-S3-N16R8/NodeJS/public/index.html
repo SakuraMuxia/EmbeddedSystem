@@ -1,0 +1,20 @@
+<canvas id="view" width="320" height="240"></canvas>
+<script>
+const canvas = document.getElementById("view");
+const ctx = canvas.getContext("2d");
+
+const ws = new WebSocket("ws://192.168.1.100:9001/client");
+ws.binaryType = "arraybuffer";
+
+ws.onopen = () => console.log("H5 client connected");
+
+ws.onmessage = (e) => {
+  const blob = new Blob([e.data], { type: "image/jpeg" });
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(blob);
+};
+</script>
