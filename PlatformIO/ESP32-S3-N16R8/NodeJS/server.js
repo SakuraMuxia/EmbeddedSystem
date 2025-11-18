@@ -7,14 +7,14 @@ app.use(express.json());
 
 
 
+// ================= CORS 配置 =================
 app.use(
   cors({
-    origin: "*",
+    origin: "*", // 允许所有域名跨域
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-app.options("*", (req, res) => res.sendStatus(200));
 
 // ================= 配置 =================
 const WS_PORT = 9001;
