@@ -1,6 +1,6 @@
 <template>
 	<view class="container">
-	    <img ref="cameraImgRef" width="320" height="240" />
+	    <img ref="cameraImgRef" width="480" height="320" />
 	  </view>
 </template>
 

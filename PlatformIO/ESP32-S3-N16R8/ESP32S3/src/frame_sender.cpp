@@ -27,7 +27,7 @@ void sendCameraFrames()
         delay(10);
         return;
     }
-    Serial.printf("[ESP32] Captured frame: %u bytes\n", fb->len);
+    // Serial.printf("[ESP32] Captured frame: %u bytes\n", fb->len);
     // 推荐：分片发送，避免单次 sendBIN 阻塞或造成 TCP 局部错误
     // 发送总长度 (4 bytes, big endian)// v发送 JPEG 帧之前，先发送一个 4 字节的整数，告诉接收端这一帧 JPEG 总共有多少字节
     uint32_t frameLen = fb->len;
@@ -56,7 +56,7 @@ void sendCameraFrames()
         delay(1);
     }
 
-    Serial.printf("[ESP32] sendBIN result: %d\n", ok ? 1 : 0);
+    // Serial.printf("[ESP32] sendBIN result: %d\n", ok ? 1 : 0);
     
     // 一定要返回 fb（且只返回一次）
     esp_camera_fb_return(fb);

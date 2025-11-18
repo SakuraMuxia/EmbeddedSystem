@@ -36,7 +36,7 @@ bool initCamera() {
     config.pixel_format = PIXFORMAT_JPEG;
 
     // 固定分辨率，最安全
-    config.frame_size = FRAMESIZE_QVGA;
+    config.frame_size = FRAMESIZE_HVGA;
     config.jpeg_quality = 12;
 
     // 单缓冲

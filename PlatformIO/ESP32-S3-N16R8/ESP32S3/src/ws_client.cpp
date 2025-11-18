@@ -3,7 +3,7 @@
 #include <WebSocketsClient.h>
 
 WebSocketsClient webSocket;
-
+bool streaming = false;
 // Node.js WebSocket 服务地址
 const char* NODE_WS_HOST = "192.168.2.250"; // 修改为你的 Node IP
 const uint16_t NODE_WS_PORT = 9001;
@@ -25,7 +25,13 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
             // 可在此发送初始消息
             break;
         case WStype_TEXT:
-            Serial.printf("[WS] Received text: %s\n", payload);
+            if (strncmp((char*)payload, "START", length) == 0) {
+                streaming = true;
+                Serial.println("[WS] Streaming started");
+            } else if (strncmp((char*)payload, "STOP", length) == 0) {
+                streaming = false;
+                Serial.println("[WS] Streaming stopped");
+            }
             break;
         case WStype_BIN:
             Serial.printf("[WS] Received binary data: %d bytes\n", length);

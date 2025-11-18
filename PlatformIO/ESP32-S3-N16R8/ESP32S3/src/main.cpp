@@ -38,5 +38,9 @@ void setup() {
 
 void loop() {
     wsLoop();          // WebSocket 处理
-    sendCameraFrames(); // 推送摄像头帧
+    if (streaming) {
+        sendCameraFrames(); // 推送摄像头帧
+    } else {
+        delay(10);
+    }
 }

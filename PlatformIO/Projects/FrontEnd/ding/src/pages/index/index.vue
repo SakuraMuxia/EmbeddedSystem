@@ -12,6 +12,7 @@
 		<button @click="handleOpenScreen('menu')" class="btn">菜单</button>
 		<button @click="handleOpenScreen('minimizeWindow')" class="btn">返回</button>
 		<button @click="disConnect('esp32-2805_A570_53B8')" class="btn">断开链接</button>
+		<button @click="jumpToRealTime" class="btn">跳转实时</button>
 		<button @click="logout()" class="btn">退出登陆</button>
 	</view>
 </template>
@@ -47,6 +48,12 @@ const handleOpenScreen = async (oper:String) => {
 			uni.showToast({ title: `网络错误`, icon: 'fail' });
 		});
 };
+
+const jumpToRealTime = () => {
+	uni.navigateTo({
+	  url: '/pages/my/my'
+	});
+}
 
 const disConnect = async(id:any) => {
 	await indexReq.getDisconnect(id).then((res:any)=>{

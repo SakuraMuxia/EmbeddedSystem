@@ -1,76 +1,91 @@
-const net = require("net");
-const WebSocket = require("ws");
+const express = require("express");
+const app = express();
+app.use(express.json());
 
-const ESP_PORT = 9000; // ESP32 TCP 推流端口
-const WS_PORT = 9001; // WebSocket 前端端口
-const HEARTBEAT_INTERVAL = 30000; // 心跳检测间隔 30 秒
+const WebSocket = require("ws");
+const http = require("http");
+
+// ================= 配置 =================
+const WS_PORT = 9001;
+const HEARTBEAT_INTERVAL = 30000; // 30s 心跳
+const MAX_FRAME_SIZE = 2 * 1024 * 1024; // 最大 2MB
 
 const esp32Clients = new Set();
 const h5Clients = new Set();
-
-const wss = new WebSocket.Server({ noServer: true });
-console.log(`[WS] Server ready to handle /ESP32 and /client`);
 
 // 帧缓存，用于拼接分片
 let espFrameBuffer = null;
 let espFrameSize = 0;
 let espReceived = 0;
 
-/**
- * 处理来自 ESP32 的 JPEG 分片数据
- * @param {Buffer} buf - Node 接收到的 Buffer
- * @param {Set<WebSocket>} h5Clients - 所有 H5 客户端集合
- */
+// ================= WebSocket 帧处理 =================
 function handleESP32FrameChunk(buf, h5Clients) {
-  // 缓存未初始化，读取总长度
-  if (!espFrameBuffer) {
-    if (buf.length >= 4) {
-      espFrameSize = buf.readUInt32BE(0);
-      console.log('espFrameSize',espFrameSize)
-      console.log('buf.length', buf.length, 'buf.slice(0,10)', buf.slice(0,10));
-      espFrameBuffer = Buffer.alloc(espFrameSize);
+  try {
+    // 缓存未初始化，读取总长度
+    if (!espFrameBuffer) {
+      if (buf.length >= 4) {
+        espFrameSize = buf.readUInt32BE(0);
+
+        // 限制最大帧大小
+        if (espFrameSize <= 0 || espFrameSize > MAX_FRAME_SIZE) {
+          console.warn("[Node] Invalid frame size", espFrameSize);
+          return false;
+        }
+
+        espFrameBuffer = Buffer.alloc(espFrameSize);
+        espReceived = 0;
+
+        // 有多余数据作为第一片
+        if (buf.length > 4) {
+          const firstChunk = buf.slice(4);
+          firstChunk.copy(espFrameBuffer, 0);
+          espReceived += firstChunk.length;
+        }
+        return false; // 尚未完整接收
+      } else {
+        console.warn("[Node] Received unexpected data before length, ignoring", buf.length);
+        return false;
+      }
+    }
+
+    // 缓存已初始化，拼接分片
+    buf.copy(espFrameBuffer, espReceived);
+    espReceived += buf.length;
+
+    // 收到完整 JPEG
+    if (espReceived >= espFrameSize) {
+      if (h5Clients.size > 0) {
+        h5Clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            try {
+              client.send(espFrameBuffer, { binary: true });
+            } catch (e) {
+              console.error("[Node] send error:", e.message);
+            }
+          }
+        });
+      }
+
+      // 重置缓存
+      espFrameBuffer = null;
+      espFrameSize = 0;
       espReceived = 0;
 
-      // 有多余数据作为第一片
-      if (buf.length > 4) {
-        const firstChunk = buf.slice(4);
-        firstChunk.copy(espFrameBuffer, 0);
-        espReceived += firstChunk.length;
-      }
-      return false; // 尚未完整接收
-    } else {
-      console.warn("[Node] Received unexpected data before length, ignoring", buf.length);
-      return false;
-    }
-  }
-
-  // 缓存已初始化，拼接分片
-  buf.copy(espFrameBuffer, espReceived);
-  espReceived += buf.length;
-
-  // 收到完整 JPEG
-  if (espReceived >= espFrameSize) {
-    if (h5Clients.size > 0) {
-      h5Clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(espFrameBuffer);
-        }
-      });
+      return true; // 完整帧已发送
     }
 
+    return false; // 尚未完整接收
+  } catch (err) {
+    console.error("[Node] handleESP32FrameChunk exception:", err.message);
     // 重置缓存
     espFrameBuffer = null;
     espFrameSize = 0;
     espReceived = 0;
-
-    return true; // 完整帧已发送
+    return false;
   }
-
-  return false; // 尚未完整接收
 }
 
-
-// 处理每个 WebSocket 连接
+// ================= WebSocket 连接处理 =================
 function handleConnection(ws, clientType) {
   ws.isAlive = true;
 
@@ -86,16 +101,10 @@ function handleConnection(ws, clientType) {
     console.log(`[WS] Received PONG from ${clientType}`);
   });
 
-  ws.on("message", (msg,isBinary) => {
-    if (clientType === "ESP32") {
-      // const buf = Buffer.from(msg);
-      // console.log(buf)
-      // handleESP32FrameChunk(msg, h5Clients);
-      if (isBinary) {
-        handleESP32FrameChunk(msg, h5Clients);
-      }
+  ws.on("message", (msg, isBinary) => {
+    if (clientType === "ESP32" && isBinary) {
+      handleESP32FrameChunk(msg, h5Clients);
     } else if (clientType === "H5") {
-      // H5 客户端发送消息，可根据需求处理
       console.log("[H5] Message:", msg.toString());
     }
   });
@@ -111,20 +120,17 @@ function handleConnection(ws, clientType) {
   });
 }
 
-// ================== 定时心跳检测 ==================
+// ================= 心跳机制 =================
 setInterval(() => {
   const checkClients = (clients, type) => {
     clients.forEach((ws) => {
       if (!ws.isAlive) {
-        ws.missed += 1;
-        if (ws.missed > 2) ws.terminate();
         console.log(`[WS] Terminating dead ${type} client`);
         ws.terminate();
         clients.delete(ws);
         return;
       }
       ws.isAlive = false;
-      ws.missed = 0;
       ws.ping(); // ESP32 和 H5 自动回应 pong
     });
   };
@@ -133,9 +139,9 @@ setInterval(() => {
   checkClients(h5Clients, "H5");
 }, HEARTBEAT_INTERVAL);
 
-// ================== HTTP 升级处理 ==================
-const http = require("http");
-const server = http.createServer();
+// ================= HTTP + WebSocket 服务 =================
+const server = http.createServer(app); // 把 Express 绑定到 HTTP Server
+const wss = new WebSocket.Server({ noServer: true });
 
 server.on("upgrade", (request, socket, head) => {
   const url = request.url;
@@ -153,6 +159,17 @@ server.on("upgrade", (request, socket, head) => {
   }
 });
 
+app.post("/stream/:action", (req, res) => {
+  const action = req.params.action.toUpperCase();
+  if (esp32Clients.size === 0) return res.status(500).json({ error: "No ESP32 connected" });
+
+  esp32Clients.forEach((ws) => {
+    if (ws.readyState === WebSocket.OPEN) ws.send(action);
+  });
+
+  res.json({ status: "OK", message: `Streaming ${action}` });
+});
+
 server.listen(WS_PORT, () => {
-  console.log(`[HTTP] Server listening on port ${WS_PORT}`);
+  console.log(`[HTTP+WS] Server listening on port ${WS_PORT}`);
 });
