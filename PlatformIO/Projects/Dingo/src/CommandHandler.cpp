@@ -241,7 +241,20 @@ void handleCommand(const String &command)
         pressEnter();
         sendLog("switchDk9","success","已切换到打卡界面");
     }
-    
+
+    else if (command == "switchDk8")
+    {   
+        // 按 9 下 Tab 键
+        for (int i = 0; i < 8; i++){
+            pressTab();
+            delay(200);
+        }
+        delay(200);
+        // 按 Enter 键
+        pressEnter();
+        sendLog("switchDk8","success","已切换到打卡界面");
+    }
+
     else if (command == "switchFh")
     {   
         // 按 8 下 Tab 键

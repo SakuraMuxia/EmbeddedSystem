@@ -3,7 +3,7 @@
 		<button @click="handleOpenScreen('unlock')" class="btn">解锁</button>
 		<button @click="handleOpenScreen('2altTab')" class="btn">2altTab</button>
 		<button @click="handleOpenScreen('switchDk9')" class="btn">切换到应用9</button>
-		<button @click="handleOpenScreen('switchFh')" class="btn">返回应用首页</button>
+		<button @click="handleOpenScreen('switchDk8')" class="btn">切换到应用8</button>
 		<button @click="handleOpenScreen('2esc')" class="btn">两次取消</button>
 		<button @click="handleOpenScreen('esc')" class="btn">取消</button>
 		<button @click="handleOpenScreen('enter')" class="btn">确认</button>
