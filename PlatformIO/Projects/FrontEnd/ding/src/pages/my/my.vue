@@ -9,6 +9,7 @@
 			<button class="btn btn-alt" @click="handleOpenScreen('2altTab')">2altTab</button>
 			<button class="btn btn-app9" @click="handleOpenScreen('switchDk9')">切换到应用9</button>
 			<button class="btn btn-app8" @click="handleOpenScreen('switchDk8')">切换到应用8</button>
+			<button class="btn btn-app8" @click="handleOpenScreen('switchHome')">切换到桌面</button>
 			<button class="btn btn-app8" @click="handleOpenScreen('swipeDing')">手动叮</button>
 			<button class="btn btn-2esc" @click="handleOpenScreen('2esc')">两次取消</button>
 			<button class="btn btn-esc" @click="handleOpenScreen('esc')">取消</button>
@@ -16,7 +17,7 @@
 			<button class="btn btn-clock" @click="handleOpenScreen('clockIn')">DK</button>
 			<button class="btn btn-tab" @click="handleOpenScreen('tab')">tab</button>
 			<button class="btn btn-menu" @click="handleOpenScreen('menu')">菜单</button>
-			<button class="btn btn-back" @click="handleOpenScreen('minimizeWindow')">返回</button>
+			<button class="btn btn-back" @click="handleOpenScreen('minimizeWindow')">最小化</button>
 		</view>
 	</view>
 </template>
@@ -121,7 +122,7 @@ const backToHome = () => {
 /* 所有按钮统一尺寸 */
 .btn {
 	width: 100%;
-	font-size: 18rpx;   /* 字体大小 */
+	font-size: 22rpx;   /* 字体大小 */
 	border-radius: 12rpx;
 	color: #fff;
 	text-align: center;

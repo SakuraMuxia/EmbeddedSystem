@@ -255,21 +255,21 @@ void handleCommand(const String &command)
         sendLog("switchDk8","success","已切换到打卡界面");
     }
 
-    else if (command == "switchFh")
+    else if (command == "switchHome")
     {   
-        // 按 8 下 Tab 键
+        // 按 6 下 Tab 键
         for (int i = 0; i < 6; i++){
             pressTab();
             delay(200);
         }
-        delay(200);
+        // delay(200);
         // 按 Enter 键
-        pressEnter();
-        delay(200);
-        pressEsc();
+        // pressEnter();
+        // delay(200);
+        // pressEsc();
         delay(400);
         press2Esc();
-        sendLog("switchFh","success","已切换到分红界面");
+        sendLog("switchFh","success","已切换到Home");
         
     }
     else if (command == "altTab")
