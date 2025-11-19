@@ -1,21 +1,10 @@
 <template>
 	<view class="content">
-		<button @click="handleOpenScreen('unlock')" class="btn">解锁</button>
-		<button @click="handleOpenScreen('2altTab')" class="btn">2altTab</button>
-		<button @click="handleOpenScreen('switchDk9')" class="btn">切换到应用9</button>
-		<button @click="handleOpenScreen('switchDk8')" class="btn">切换到应用8</button>
-		<button @click="handleOpenScreen('2esc')" class="btn">两次取消</button>
-		<button @click="handleOpenScreen('esc')" class="btn">取消</button>
-		<button @click="handleOpenScreen('enter')" class="btn">确认</button>
-		<button @click="handleOpenScreen('clockIn')" class="btn">DK</button>
-		<button @click="handleOpenScreen('tab')" class="btn">tab</button>
-		<button @click="handleOpenScreen('menu')" class="btn">菜单</button>
-		<button @click="handleOpenScreen('minimizeWindow')" class="btn">返回</button>
-		<button @click="disConnect('esp32-2805_A570_53B8')" class="btn">断开链接</button>
-		<button @click="jumpToRealTime" class="btn">跳转实时</button>
-		<button @click="logout()" class="btn">退出登陆</button>
 		<button @click="startStream()" class="btn">开启推流</button>
 		<button @click="stopStream()" class="btn">关闭推流</button>
+		<button @click="disConnect('esp32-2805_A570_53B8')" class="btn">断开链接</button>
+		<button @click="jumpToRealTime()" class="btn">跳转实时</button>
+		<button @click="logout()" class="btn">退出登陆</button>
 	</view>
 </template>
 
@@ -128,12 +117,7 @@ const stopStream = () => {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	.btn{
-		
-		margin-bottom: 20rpx;
-	}
 }
-
 .logo {
 	height: 200rpx;
 	width: 200rpx;

@@ -1,19 +1,22 @@
 <template>
 	<view class="container">
-		<button @click="backToHome">返回</button>
+		<button @click="backToHome">返回首页</button>
+
 		<img ref="cameraImgRef" class="camera-img" />
+
 		<view class="button-grid">
-			<button @click="handleOpenScreen('unlock')">解锁</button>
-			<button @click="handleOpenScreen('2altTab')">2altTab</button>
-			<button @click="handleOpenScreen('switchDk9')">切换到应用9</button>
-			<button @click="handleOpenScreen('switchDk8')">切换到应用8</button>
-			<button @click="handleOpenScreen('2esc')">两次取消</button>
-			<button @click="handleOpenScreen('esc')">取消</button>
-			<button @click="handleOpenScreen('enter')">确认</button>
-			<button @click="handleOpenScreen('clockIn')">DK</button>
-			<button @click="handleOpenScreen('tab')">tab</button>
-			<button @click="handleOpenScreen('menu')">菜单</button>
-			<button @click="handleOpenScreen('minimizeWindow')">返回</button>
+			<button class="btn btn-unlock" @click="handleOpenScreen('unlock')">解锁</button>
+			<button class="btn btn-alt" @click="handleOpenScreen('2altTab')">2altTab</button>
+			<button class="btn btn-app9" @click="handleOpenScreen('switchDk9')">切换到应用9</button>
+			<button class="btn btn-app8" @click="handleOpenScreen('switchDk8')">切换到应用8</button>
+			<button class="btn btn-app8" @click="handleOpenScreen('swipeDing')">手动叮</button>
+			<button class="btn btn-2esc" @click="handleOpenScreen('2esc')">两次取消</button>
+			<button class="btn btn-esc" @click="handleOpenScreen('esc')">取消</button>
+			<button class="btn btn-enter" @click="handleOpenScreen('enter')">确认</button>
+			<button class="btn btn-clock" @click="handleOpenScreen('clockIn')">DK</button>
+			<button class="btn btn-tab" @click="handleOpenScreen('tab')">tab</button>
+			<button class="btn btn-menu" @click="handleOpenScreen('menu')">菜单</button>
+			<button class="btn btn-back" @click="handleOpenScreen('minimizeWindow')">返回</button>
 		</view>
 	</view>
 </template>
@@ -45,27 +48,25 @@ const setupWebSocket = () => {
 		}
 	});
 };
-const handleOpenScreen = async (oper:String) => {
-	
+const handleOpenScreen = async (oper: String) => {
 	const body = {
-		cmd:oper,
-		deviceId:"esp32-2805_A570_53B8"
+		cmd: oper,
+		deviceId: 'esp32-2805_A570_53B8'
 	};
 	await indexReq
 		.postCommand(body)
-		.then((res:any) => {
-			console.log(res)
+		.then((res: any) => {
+			console.log(res);
 			// 没有拦截状态
-			if(res.success == true){
+			if (res.success == true) {
 				// 消息提示
 				uni.showToast({ title: '发送指令成功', icon: 'success' });
-			}else{
+			} else {
 				uni.showToast({ title: `发送指令失败${res.message}`, icon: 'fail' });
 			}
-			
 		})
-		.catch((err:any) => {
-			console.log(err)
+		.catch((err: any) => {
+			console.log(err);
 			// 消息提示
 			uni.showToast({ title: `网络错误`, icon: 'fail' });
 		});
@@ -99,28 +100,43 @@ const backToHome = () => {
 </script>
 
 <style scoped lang="scss">
-	.camera-img {
-	  width: 100%;       /* 宽度占满屏幕 */
-	  height: auto;      /* 高度自动，保持比例 */
-	  aspect-ratio: 4 / 3; /* 保持 4:3 比例 */
-	  display: block;
-	  margin: 10px 0;
-	}
-	.container {
-	  padding: 10px;
-	}
-	
-	.button-grid {
-	  display: grid;
-	  grid-template-columns: repeat(3, 1fr); /* 每行3列 */
-	  gap: 10px; /* 行列间距 */
-	  margin-top: 20px;
-	}
-	
-	.button-grid button {
-	  width: 100%;
-	  padding: 10px;
-	  font-size: 16px;
-	}
-	
+.camera-img {
+	width: 80%; /* 宽度占满屏幕 */
+	height: auto; /* 高度自动，保持比例 */
+	aspect-ratio: 4 / 3; /* 保持 4:3 比例 */
+	display: block;
+	margin: 10px auto;
+}
+.container {
+	padding: 10px;
+}
+
+.button-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr); /* 每行3列 */
+	gap: 10px; /* 行列间距 */
+	margin-top: 20px;
+}
+
+/* 所有按钮统一尺寸 */
+.btn {
+	width: 100%;
+	font-size: 18rpx;   /* 字体大小 */
+	border-radius: 12rpx;
+	color: #fff;
+	text-align: center;
+}
+
+/* 每个按钮的独立风格 */
+.btn-unlock { background: #4CAF50; }
+.btn-alt { background: #2196F3; }
+.btn-app9 { background: #9C27B0; }
+.btn-app8 { background: #673AB7; }
+.btn-2esc { background: #FF5722; }
+.btn-esc { background: #FF9800; }
+.btn-enter { background: #3F51B5; }
+.btn-clock { background: #009688; }
+.btn-tab { background: #795548; }
+.btn-menu { background: #607D8B; }
+.btn-back { background: #E91E63; }
 </style>
