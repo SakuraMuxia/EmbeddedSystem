@@ -38,7 +38,7 @@ bool initCamera()
     config.pixel_format = PIXFORMAT_JPEG;
 
     // 固定分辨率，最安全
-    config.frame_size = FRAMESIZE_SVGA;
+    config.frame_size = FRAMESIZE_VGA;
     config.jpeg_quality = 12;
 
     // 单缓冲
@@ -57,12 +57,18 @@ bool initCamera()
     // ========== ⬇⬇⬇ 在这里设置摄像头 FPS（正确位置）⬇⬇⬇ ==========
     sensor_t *s = esp_camera_sensor_get();
     if (s)
-    {
-        // ---- OV5640 设置为 10 FPS 左右 ----
-        s->set_reg(s, 0x3035, 0xFF, 0x21);
-        s->set_reg(s, 0x3036, 0xFF, 0x54);
+
+    {   
+        s->set_reg(s, 0x3035, 0xFF, 0x11);
+        s->set_reg(s, 0x3036, 0xFF, 0x46);
         s->set_reg(s, 0x3037, 0xFF, 0x03);
-        s->set_reg(s, 0x3824, 0xFF, 0x04); // 降低 FPS 的关键值
+        s->set_reg(s, 0x3824, 0xFF, 0x02);
+        // s->set_reg(s, 0x3035, 0xFF, 0x11); // PRE_PLL：略降低预分频
+        // s->set_reg(s, 0x3036, 0xFF, 0xF0); // PLL_MULTIPLIER：适度增加 VCO 输出
+        // s->set_reg(s, 0x3037, 0xFF, 0x00); // PLL_DIVIDER：不分频
+
+        // // 帧间延迟寄存器：减小值，提高 FPS
+        // s->set_reg(s, 0x3824, 0xFF, 0x02); // 从原来的 0x04 → 0x02，大约 20 FPS
     }
     return true;
 }
