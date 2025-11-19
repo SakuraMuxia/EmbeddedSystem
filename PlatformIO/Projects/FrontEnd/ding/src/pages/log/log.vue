@@ -46,29 +46,42 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import { getWebSocketInstance } from '@/utils/getSocketIns';
+import WebSocketManager from '@/utils/websocket';
 import req from '@/api/index';
 const EspListTable = ref();
 const popupRef = ref();
 const tableData = ref([]);
 const logTableData = ref([]);
 const type = ref('right');
-const ws = getWebSocketInstance();
+let wsInstance = null;
 const formData = ref({
 	name: 'akue'
 });
+
+if(!wsInstance){
+	wsInstance = new WebSocketManager({
+		url: `ws://39.106.41.164:3000/client`,
+		heartbeatInterval: 30000,
+		reconnectInterval: 10000,
+		maxReconnectAttempts: 5
+	});
+}
+
 // 注册函数
 const registClient = () => {
 	const token = uni.getStorageSync('token')
-	if (ws.socketOpen) {
-		ws.send({ type: 'register', clientId: token});
+	if (wsInstance.socketOpen) {
+		wsInstance.send({ type: 'register', clientId: token});
 	} else {
 		setTimeout(registClient, 500);
 	}
 };
 
 // 接收消息
-ws.onMessage((data) => {
+wsInstance.onMessage((data) => {
+	if(data instanceof ArrayBuffer){
+		return;
+	}
 	let msg;
 	// 解析websocket信息
 	try {
@@ -123,11 +136,12 @@ const change = (e) => {
 };
 
 const disconnectWs = () => {
-	ws.close();
-	ws = null;
+	wsInstance.close();
+	wsInstance = null;
 }
 
 onMounted(() => {
+	
 	registClient();
 });
 onBeforeUnmount(()=>{

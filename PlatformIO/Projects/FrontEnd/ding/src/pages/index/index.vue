@@ -52,7 +52,7 @@ const handleOpenScreen = async (oper:String) => {
 };
 
 const jumpToRealTime = () => {
-	uni.navigateTo({
+	uni.reLaunch({
 	  url: '/pages/my/my'
 	});
 }
@@ -98,7 +98,7 @@ const startStream = () => {
 			uni.showToast({ title: '开启成功', icon: 'success' });
 			// 跳转页面
 			uni.reLaunch({
-				url: '/pages/my/my' // 登录成功后跳转首页
+				url: '/pages/my/my' 
 			});
 		}else{
 			uni.showToast({ title: '开启失败', icon: 'success' });
@@ -113,10 +113,6 @@ const stopStream = () => {
 		if(res.success == true){
 			
 			uni.showToast({ title: '关闭成功', icon: 'success' });
-			// 跳转页面
-			uni.reLaunch({
-				url: '/pages/my/my' // 登录成功后跳转首页
-			});
 		}else{
 			uni.showToast({ title: '关闭失败', icon: 'success' });
 		}

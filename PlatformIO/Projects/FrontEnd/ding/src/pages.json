@@ -54,7 +54,8 @@
 			"iconPath": "static/icon/index_active.png",
 			"selectedIconPath": "static/icon/index.png",
 			"text": "功能"
-		}]
+		}
+		]
 	},
 	"easycom": {
 		"autoscan": true,

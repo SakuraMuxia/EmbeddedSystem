@@ -172,15 +172,15 @@ server.on("upgrade", (request, socket, head) => {
   }
 });
 
-app.post("api/stream/:action", (req, res) => {
+app.post("/api/stream/:action", (req, res) => {
   const action = req.params.action.toUpperCase();
-  if (esp32Clients.size === 0) return res.status(500).json({ error: "No ESP32 connected" });
+  if (esp32Clients.size === 0) return res.status(500).json({ success: false, message: `ESP32设备不在线` });
 
   esp32Clients.forEach((ws) => {
     if (ws.readyState === WebSocket.OPEN) ws.send(action);
   });
 
-  res.json({ status: "OK", message: `Streaming ${action}` });
+  res.json({ success: true,status: "OK", message: `Streaming ${action}` });
 });
 
 server.listen(WS_PORT, () => {
